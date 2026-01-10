@@ -118,26 +118,31 @@ function resolveSessionValue(agentConfig, chatId, threadId) {
   return '';
 }
 
-function buildFromTemplate(template, prompt, sessionValue) {
+function buildFromTemplate(template, promptValue, sessionValue) {
   return template
     .split('{prompt}')
-    .join(shellQuote(prompt))
+    .join(promptValue)
     .split('{session}')
     .join(sessionValue ? shellQuote(sessionValue) : '')
     .trim();
 }
 
-function buildCodexCommand(prompt, threadId, agentConfig, sessionValue) {
-  const quoted = shellQuote(prompt);
+function resolvePromptValue(prompt, promptExpression) {
+  if (promptExpression) return promptExpression;
+  return shellQuote(prompt);
+}
+
+function buildCodexCommand(prompt, threadId, agentConfig, sessionValue, promptExpression) {
+  const promptValue = resolvePromptValue(prompt, promptExpression);
   const template = agentConfig.template || '';
   const cmd = agentConfig.cmd || 'codex';
   const argsRaw = agentConfig.args || '';
 
   if (template) {
     if (template.includes('{prompt}')) {
-      return buildFromTemplate(template, prompt, sessionValue);
+      return buildFromTemplate(template, promptValue, sessionValue);
     }
-    return `${template} ${quoted}`.trim();
+    return `${template} ${promptValue}`.trim();
   }
 
   let args = normalizeExecArgs(argsRaw);
@@ -146,32 +151,32 @@ function buildCodexCommand(prompt, threadId, agentConfig, sessionValue) {
     args = ensureSkipGitCheckArgs(args);
   }
   if (threadId) {
-    return `${cmd} exec resume ${shellQuote(threadId)} ${args} ${quoted}`.trim();
+    return `${cmd} exec resume ${shellQuote(threadId)} ${args} ${promptValue}`.trim();
   }
-  return `${cmd} exec ${args} ${quoted}`.trim();
+  return `${cmd} exec ${args} ${promptValue}`.trim();
 }
 
-function buildGenericCommand(prompt, agentConfig, sessionValue) {
-  const quoted = shellQuote(prompt);
+function buildGenericCommand(prompt, agentConfig, sessionValue, promptExpression) {
+  const promptValue = resolvePromptValue(prompt, promptExpression);
   const template = agentConfig.template || '';
   const cmd = agentConfig.cmd || '';
   const argsRaw = agentConfig.args || '';
   if (template) {
     if (template.includes('{prompt}')) {
-      return buildFromTemplate(template, prompt, sessionValue);
+      return buildFromTemplate(template, promptValue, sessionValue);
     }
-    return `${template} ${quoted}`.trim();
+    return `${template} ${promptValue}`.trim();
   }
-  return `${cmd} ${argsRaw} ${quoted}`.trim();
+  return `${cmd} ${argsRaw} ${promptValue}`.trim();
 }
 
 function buildAgentCommand(prompt, options, agentConfig) {
-  const { chatId, threadId } = options || {};
+  const { chatId, threadId, promptExpression } = options || {};
   const sessionValue = resolveSessionValue(agentConfig, chatId, threadId);
   if (agentConfig.type === 'codex') {
-    return buildCodexCommand(prompt, threadId, agentConfig, sessionValue);
+    return buildCodexCommand(prompt, threadId, agentConfig, sessionValue, promptExpression);
   }
-  return buildGenericCommand(prompt, agentConfig, sessionValue);
+  return buildGenericCommand(prompt, agentConfig, sessionValue, promptExpression);
 }
 
 function parseCodexJsonOutput(output) {

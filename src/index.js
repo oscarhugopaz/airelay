@@ -44,6 +44,11 @@ const bot = new Telegraf(BOT_TOKEN);
 const queues = new Map();
 const threads = new Map();
 
+function shellQuote(value) {
+  const escaped = String(value).replace(/'/g, String.raw`'\''`);
+  return `'${escaped}'`;
+}
+
 function execTmux(args) {
   return new Promise((resolve, reject) => {
     execFile('tmux', args, { encoding: 'utf8' }, (err, stdout, stderr) => {
@@ -355,8 +360,20 @@ async function runAgentForChat(chatId, prompt, options = {}) {
   const end = `<<<END:${uuid}>>>`;
   const threadId = threads.get(chatId);
   const finalPrompt = buildPrompt(prompt, options.imagePaths || []);
-  const agentCmd = buildAgentCommand(finalPrompt, { chatId, threadId }, agentConfig);
-  const command = `printf '\\n${begin}\\n'; ${agentCmd}; printf '\\n${end}\\n'`;
+  const promptBase64 = Buffer.from(finalPrompt, 'utf8').toString('base64');
+  const promptExpression = '"$PROMPT"';
+  const agentCmd = buildAgentCommand(
+    finalPrompt,
+    { chatId, threadId, promptExpression },
+    agentConfig
+  );
+  const command = [
+    `PROMPT_B64=${shellQuote(promptBase64)};`,
+    'PROMPT=$(printf %s "$PROMPT_B64" | base64 --decode);',
+    `printf '\\n${begin}\\n';`,
+    `${agentCmd};`,
+    `printf '\\n${end}\\n'`,
+  ].join(' ');
 
   await sendCommand(session, command);
   const output = await waitForMarkers(session, begin, end, AGENT_TIMEOUT_SAFE_MS, AGENT_LABEL);
