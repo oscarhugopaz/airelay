@@ -43,6 +43,7 @@ const IMAGE_CLEANUP_INTERVAL_MS = Number(
 const bot = new Telegraf(BOT_TOKEN);
 const queues = new Map();
 const threads = new Map();
+const models = new Map();
 
 function shellQuote(value) {
   const escaped = String(value).replace(/'/g, String.raw`'\''`);
@@ -118,6 +119,11 @@ function chunkText(text, size) {
     chunks.push(text.slice(i, i + size));
   }
   return chunks;
+}
+
+function extractCommandValue(text) {
+  if (!text) return '';
+  return text.replace(/^\/\w+(?:@\w+)?\s*/i, '').trim();
 }
 
 function formatError(err) {
@@ -359,12 +365,13 @@ async function runAgentForChat(chatId, prompt, options = {}) {
   const begin = `<<<BEGIN:${uuid}>>>`;
   const end = `<<<END:${uuid}>>>`;
   const threadId = threads.get(chatId);
+  const model = models.get(chatId);
   const finalPrompt = buildPrompt(prompt, options.imagePaths || []);
   const promptBase64 = Buffer.from(finalPrompt, 'utf8').toString('base64');
   const promptExpression = '"$PROMPT"';
   const agentCmd = buildAgentCommand(
     finalPrompt,
-    { chatId, threadId, promptExpression },
+    { chatId, threadId, promptExpression, model },
     agentConfig
   );
   const command = [
@@ -423,6 +430,22 @@ function enqueue(chatId, fn) {
 }
 
 bot.start((ctx) => ctx.reply(`Ready. Send a message and I will pass it to ${AGENT_LABEL}.`));
+
+bot.command('model', (ctx) => {
+  const chatId = ctx.chat.id;
+  const value = extractCommandValue(ctx.message.text);
+  if (!value) {
+    const current = models.get(chatId);
+    if (current) {
+      ctx.reply(`Current model: ${current}`);
+    } else {
+      ctx.reply('No model set. Use /model <name>.');
+    }
+    return;
+  }
+  models.set(chatId, value);
+  ctx.reply(`Model set to ${value}.`);
+});
 
 bot.command('reset', async (ctx) => {
   const session = buildSessionName(ctx.chat.id);
