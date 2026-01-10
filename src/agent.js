@@ -164,6 +164,9 @@ function buildGenericCommand(prompt, agentConfig, sessionValue, promptExpression
   const template = agentConfig.template || '';
   const cmd = agentConfig.cmd || '';
   const argsRaw = agentConfig.args || '';
+  if (!template && !cmd) {
+    throw new Error('Agent config missing cmd/template.');
+  }
   if (template) {
     const hasPrompt = template.includes('{prompt}');
     const hasSession = template.includes('{session}');
