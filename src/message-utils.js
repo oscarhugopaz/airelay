@@ -18,6 +18,16 @@ function formatError(err) {
   return message || String(err);
 }
 
+function parseSlashCommand(text) {
+  if (!text) return null;
+  const match = text.match(/^\/([A-Za-z0-9_-]+)(?:@[\w_]+)?(?:\s+([\s\S]*))?$/);
+  if (!match) return null;
+  return {
+    name: match[1],
+    args: (match[2] || '').trim(),
+  };
+}
+
 function extractCommandValue(text) {
   if (!text) return '';
   return text.replace(/^\/\w+(?:@\w+)?\s*/i, '').trim();
@@ -144,6 +154,7 @@ function buildPrompt(prompt, imagePaths = [], imageDir) {
 module.exports = {
   chunkText,
   formatError,
+  parseSlashCommand,
   extractCommandValue,
   extensionFromMime,
   extensionFromUrl,

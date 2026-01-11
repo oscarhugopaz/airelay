@@ -41,6 +41,7 @@ Open Telegram, send `/start`, then any message.
 - `/reset`: clear the chat session (drops the Codex thread id)
 - `/model <name>`: set the model (persisted in `config.json`)
 - `/thinking <level>`: set thinking level (persisted in `config.json`)
+- `/<script> [args]`: run an executable script from `~/.config/aibot/scripts`
 
 ### Images in responses
 If the agent generates an image, save it under the image folder (default: OS temp under `aipal/images`) and reply with:
@@ -51,6 +52,10 @@ The bot will send the image back to Telegram.
 
 ## Configuration
 The only required environment variable is `TELEGRAM_BOT_TOKEN` in `.env`.
+
+Optional:
+- `AIPAL_SCRIPTS_DIR`: directory for slash scripts (default: `~/.config/aibot/scripts`)
+- `AIPAL_SCRIPT_TIMEOUT_MS`: timeout for slash scripts (default: 120000)
 
 ## Config file (optional)
 The bot stores `/model` and `/thinking` in a JSON file at:

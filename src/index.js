@@ -3,6 +3,7 @@ require('dotenv').config();
 const { Telegraf } = require('telegraf');
 const { execFile } = require('child_process');
 const { randomUUID } = require('crypto');
+const { constants: fsConstants } = require('fs');
 const fs = require('fs/promises');
 const os = require('os');
 const path = require('path');
@@ -11,6 +12,7 @@ const { readConfig, updateConfig } = require('./config-store');
 const {
   chunkText,
   formatError,
+  parseSlashCommand,
   extractCommandValue,
   extensionFromMime,
   extensionFromUrl,
@@ -35,6 +37,15 @@ const PARAKEET_TIMEOUT_MS = 120000;
 const IMAGE_DIR = path.resolve(path.join(os.tmpdir(), 'aipal', 'images'));
 const IMAGE_TTL_HOURS = 24;
 const IMAGE_CLEANUP_INTERVAL_MS = 60 * 60 * 1000;
+
+const SCRIPTS_DIR =
+  process.env.AIPAL_SCRIPTS_DIR ||
+  process.env.AIBOT_SCRIPTS_DIR ||
+  path.join(os.homedir(), '.config', 'aibot', 'scripts');
+const SCRIPT_TIMEOUT_MS = Number(
+  process.env.AIPAL_SCRIPT_TIMEOUT_MS || process.env.AIBOT_SCRIPT_TIMEOUT_MS || 120000
+);
+const SCRIPT_NAME_REGEX = /^[A-Za-z0-9_-]+$/;
 
 const bot = new Telegraf(BOT_TOKEN);
 const queues = new Map();
@@ -62,6 +73,73 @@ function execLocal(cmd, args, options = {}) {
       }
       resolve(stdout || '');
     });
+  });
+}
+
+function splitArgs(input) {
+  const args = [];
+  let current = '';
+  let quote = null;
+  for (let i = 0; i < input.length; i += 1) {
+    const ch = input[i];
+    if (quote) {
+      if (ch === quote) {
+        quote = null;
+        continue;
+      }
+      if (ch === '\\' && quote === '"' && i + 1 < input.length) {
+        current += input[i + 1];
+        i += 1;
+        continue;
+      }
+      current += ch;
+      continue;
+    }
+    if (ch === '"' || ch === "'") {
+      quote = ch;
+      continue;
+    }
+    if (/\s/.test(ch)) {
+      if (current) {
+        args.push(current);
+        current = '';
+      }
+      continue;
+    }
+    if (ch === '\\' && i + 1 < input.length) {
+      current += input[i + 1];
+      i += 1;
+      continue;
+    }
+    current += ch;
+  }
+  if (current) args.push(current);
+  return args;
+}
+
+async function runScriptCommand(commandName, rawArgs) {
+  if (!SCRIPT_NAME_REGEX.test(commandName)) {
+    throw new Error(`Invalid script name: ${commandName}`);
+  }
+  const scriptPath = path.resolve(SCRIPTS_DIR, commandName);
+  if (!isPathInside(SCRIPTS_DIR, scriptPath)) {
+    throw new Error(`Invalid script path: ${scriptPath}`);
+  }
+  try {
+    await fs.access(scriptPath, fsConstants.X_OK);
+  } catch (err) {
+    if (err && err.code === 'ENOENT') {
+      throw new Error(`Script not found: ${scriptPath}`);
+    }
+    if (err && err.code === 'EACCES') {
+      throw new Error(`Script not executable: ${scriptPath}`);
+    }
+    throw err;
+  }
+  const argv = splitArgs(rawArgs || '');
+  return execLocal(scriptPath, argv, {
+    timeout: SCRIPT_TIMEOUT_MS,
+    maxBuffer: 10 * 1024 * 1024,
   });
 }
 
@@ -281,7 +359,25 @@ bot.on('text', (ctx) => {
   const chatId = ctx.chat.id;
   const text = ctx.message.text.trim();
   if (!text) return;
-  if (text.startsWith('/')) return;
+
+  const slash = parseSlashCommand(text);
+  if (slash) {
+    const normalized = slash.name.toLowerCase();
+    if (['start', 'model', 'thinking', 'reset'].includes(normalized)) return;
+    enqueue(chatId, async () => {
+      const stopTyping = startTyping(ctx);
+      try {
+        const output = await runScriptCommand(slash.name, slash.args);
+        stopTyping();
+        await replyWithResponse(ctx, output);
+      } catch (err) {
+        console.error(err);
+        stopTyping();
+        await replyWithError(ctx, `Error running /${slash.name}.`, err);
+      }
+    });
+    return;
+  }
 
   enqueue(chatId, async () => {
     const stopTyping = startTyping(ctx);

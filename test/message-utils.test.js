@@ -7,6 +7,7 @@ const {
   extractImageTokens,
   isPathInside,
   buildPrompt,
+  parseSlashCommand,
 } = require('../src/message-utils');
 
 test('extractImageTokens keeps only images inside IMAGE_DIR', () => {
@@ -33,4 +34,14 @@ test('buildPrompt includes image hints', () => {
   const prompt = buildPrompt('hello', ['/tmp/aipal/images/a.png'], baseDir);
   assert.match(prompt, /User sent image file/);
   assert.match(prompt, /\[\[image:\/absolute\/path\]\]/);
+});
+
+test('parseSlashCommand parses args', () => {
+  const parsed = parseSlashCommand('/inbox --max 3');
+  assert.deepEqual(parsed, { name: 'inbox', args: '--max 3' });
+});
+
+test('parseSlashCommand handles bot suffix', () => {
+  const parsed = parseSlashCommand('/inbox@mybot');
+  assert.deepEqual(parsed, { name: 'inbox', args: '' });
 });
