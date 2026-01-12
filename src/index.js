@@ -50,6 +50,8 @@ const SCRIPT_NAME_REGEX = /^[A-Za-z0-9_-]+$/;
 const bot = new Telegraf(BOT_TOKEN);
 const queues = new Map();
 const threads = new Map();
+const lastScriptOutputs = new Map();
+const SCRIPT_CONTEXT_MAX_CHARS = 8000;
 let globalModel;
 let globalThinking;
 
@@ -141,6 +143,24 @@ async function runScriptCommand(commandName, rawArgs) {
     timeout: SCRIPT_TIMEOUT_MS,
     maxBuffer: 10 * 1024 * 1024,
   });
+}
+
+function formatScriptContext(entry) {
+  if (!entry) return '';
+  const output = String(entry.output || '').trim() || '(no output)';
+  if (output.length <= SCRIPT_CONTEXT_MAX_CHARS) {
+    return `/${entry.name} output:\n${output}`;
+  }
+  const truncated = output.slice(0, SCRIPT_CONTEXT_MAX_CHARS);
+  const remaining = output.length - SCRIPT_CONTEXT_MAX_CHARS;
+  return `/${entry.name} output (truncated ${remaining} chars):\n${truncated}`;
+}
+
+function consumeScriptContext(chatId) {
+  const entry = lastScriptOutputs.get(chatId);
+  if (!entry) return '';
+  lastScriptOutputs.delete(chatId);
+  return formatScriptContext(entry);
 }
 
 async function replyWithError(ctx, label, err) {
@@ -247,7 +267,12 @@ async function runAgentForChat(chatId, prompt, options = {}) {
   const threadId = threads.get(chatId);
   const model = globalModel;
   const thinking = globalThinking;
-  const finalPrompt = buildPrompt(prompt, options.imagePaths || [], IMAGE_DIR);
+  const finalPrompt = buildPrompt(
+    prompt,
+    options.imagePaths || [],
+    IMAGE_DIR,
+    options.scriptContext
+  );
   const promptBase64 = Buffer.from(finalPrompt, 'utf8').toString('base64');
   const promptExpression = '"$PROMPT"';
   const agentCmd = buildAgentCommand(finalPrompt, {
@@ -368,6 +393,7 @@ bot.on('text', (ctx) => {
       const stopTyping = startTyping(ctx);
       try {
         const output = await runScriptCommand(slash.name, slash.args);
+        lastScriptOutputs.set(chatId, { name: slash.name, output });
         stopTyping();
         await replyWithResponse(ctx, output);
       } catch (err) {
@@ -382,7 +408,8 @@ bot.on('text', (ctx) => {
   enqueue(chatId, async () => {
     const stopTyping = startTyping(ctx);
     try {
-      const response = await runAgentForChat(chatId, text);
+      const scriptContext = consumeScriptContext(chatId);
+      const response = await runAgentForChat(chatId, text, { scriptContext });
       stopTyping();
       await replyWithResponse(ctx, response);
     } catch (err) {

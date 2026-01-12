@@ -36,6 +36,13 @@ test('buildPrompt includes image hints', () => {
   assert.match(prompt, /\[\[image:\/absolute\/path\]\]/);
 });
 
+test('buildPrompt includes slash context', () => {
+  const baseDir = '/tmp/aipal/images';
+  const prompt = buildPrompt('hello', [], baseDir, '/inbox output:\n1) foo');
+  assert.match(prompt, /Context from last slash command output/);
+  assert.match(prompt, /\/inbox output/);
+});
+
 test('parseSlashCommand parses args', () => {
   const parsed = parseSlashCommand('/inbox --max 3');
   assert.deepEqual(parsed, { name: 'inbox', args: '--max 3' });

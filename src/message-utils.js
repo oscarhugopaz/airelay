@@ -134,8 +134,14 @@ function extractImageTokens(text, imageDir) {
   return { cleanedText, imagePaths };
 }
 
-function buildPrompt(prompt, imagePaths = [], imageDir) {
+function buildPrompt(prompt, imagePaths = [], imageDir, scriptContext) {
   const lines = [];
+  const context = (scriptContext || '').trim();
+  if (context) {
+    lines.push('Context from last slash command output:');
+    lines.push(context);
+    lines.push('End of slash command output.');
+  }
   const trimmed = (prompt || '').trim();
   if (trimmed) lines.push(trimmed);
   if (imagePaths.length > 0) {
