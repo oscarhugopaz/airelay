@@ -8,6 +8,8 @@ const {
   isPathInside,
   buildPrompt,
   parseSlashCommand,
+  markdownToTelegramHtml,
+  chunkMarkdown,
 } = require('../src/message-utils');
 
 test('extractImageTokens keeps only images inside IMAGE_DIR', () => {
@@ -51,4 +53,34 @@ test('parseSlashCommand parses args', () => {
 test('parseSlashCommand handles bot suffix', () => {
   const parsed = parseSlashCommand('/inbox@mybot');
   assert.deepEqual(parsed, { name: 'inbox', args: '' });
+});
+
+test('markdownToTelegramHtml formats basic markdown', () => {
+  const input = [
+    '# Title',
+    '',
+    'Hello **bold** and _italic_ with `code`.',
+    '',
+    '```js',
+    'const x = 1;',
+    '```',
+    '',
+    '[OpenAI](https://openai.com)',
+  ].join('\n');
+  const output = markdownToTelegramHtml(input);
+  assert.match(output, /<b>Title<\/b>/);
+  assert.match(output, /<b>bold<\/b>/);
+  assert.match(output, /<i>italic<\/i>/);
+  assert.match(output, /<code>code<\/code>/);
+  assert.match(output, /<pre><code>const x = 1;\n<\/code><\/pre>/);
+  assert.match(output, /<a href="https:\/\/openai.com">OpenAI<\/a>/);
+});
+
+test('chunkMarkdown keeps fences together when possible', () => {
+  const input = ['```', 'line 1', 'line 2', '```', 'tail'].join('\n');
+  const chunks = chunkMarkdown(input, 20);
+  assert.equal(chunks.length, 2);
+  assert.match(chunks[0], /```/);
+  assert.match(chunks[0], /line 2/);
+  assert.equal(chunks[1], 'tail');
 });

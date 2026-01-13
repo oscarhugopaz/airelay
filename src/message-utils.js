@@ -8,6 +8,110 @@ function chunkText(text, size) {
   return chunks;
 }
 
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function escapeHtmlAttr(value) {
+  return escapeHtml(value).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function sanitizeUrl(value) {
+  const url = String(value || '').trim();
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('tg://')) {
+    return url;
+  }
+  return '';
+}
+
+function chunkMarkdown(text, size) {
+  const chunks = [];
+  if (!text) return chunks;
+  const lines = String(text).split(/\r?\n/);
+  let current = '';
+  let inCodeFence = false;
+  for (const line of lines) {
+    const isFence = line.trim().startsWith('```');
+    const closingFence = isFence && inCodeFence;
+    const next = current ? `${current}\n${line}` : line;
+    if (current && next.length > size && !inCodeFence) {
+      chunks.push(current);
+      current = line;
+    } else if (current && next.length > size && closingFence) {
+      current = next;
+    } else if (current && next.length > size) {
+      chunks.push(current);
+      current = line;
+    } else {
+      current = next;
+    }
+    if (isFence) inCodeFence = !inCodeFence;
+  }
+  if (current) chunks.push(current);
+  return chunks;
+}
+
+function markdownToTelegramHtml(value) {
+  if (!value) return '';
+  let text = String(value);
+  const codeBlocks = [];
+  const inlineCodes = [];
+  const links = [];
+
+  text = text.replace(/```[^\n]*\n([\s\S]*?)```/g, (match, code) => {
+    const token = `@@CODEBLOCK${codeBlocks.length}@@`;
+    codeBlocks.push(code);
+    return token;
+  });
+
+  text = text.replace(/`([^`\n]+)`/g, (match, code) => {
+    const token = `@@INLINECODE${inlineCodes.length}@@`;
+    inlineCodes.push(code);
+    return token;
+  });
+
+  text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, label, url) => {
+    const safeUrl = sanitizeUrl(url);
+    if (!safeUrl) return match;
+    const token = `@@LINK${links.length}@@`;
+    links.push({ label, url: safeUrl });
+    return token;
+  });
+
+  text = escapeHtml(text);
+
+  text = text.replace(/^#{1,6}\s+(.+)$/gm, '<b>$1</b>');
+  text = text.replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
+  text = text.replace(/__([^_]+)__/g, '<b>$1</b>');
+  text = text.replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<i>$2</i>');
+  text = text.replace(/(^|[^_])_([^_\n]+)_/g, '$1<i>$2</i>');
+  text = text.replace(/~~([^~]+)~~/g, '<s>$1</s>');
+  text = text.replace(/^\s*[-*]\s+/gm, '• ');
+
+  text = text.replace(/@@LINK(\d+)@@/g, (match, index) => {
+    const entry = links[Number(index)];
+    if (!entry) return '';
+    const label = escapeHtml(entry.label);
+    const href = escapeHtmlAttr(entry.url);
+    return `<a href="${href}">${label}</a>`;
+  });
+
+  text = text.replace(/@@INLINECODE(\d+)@@/g, (match, index) => {
+    const code = inlineCodes[Number(index)] || '';
+    return `<code>${escapeHtml(code)}</code>`;
+  });
+
+  text = text.replace(/@@CODEBLOCK(\d+)@@/g, (match, index) => {
+    const code = codeBlocks[Number(index)] || '';
+    return `<pre><code>${escapeHtml(code)}</code></pre>`;
+  });
+
+  return text;
+}
+
 function formatError(err) {
   if (!err) return 'Unknown error';
   const parts = [];
@@ -159,6 +263,8 @@ function buildPrompt(prompt, imagePaths = [], imageDir, scriptContext) {
 
 module.exports = {
   chunkText,
+  chunkMarkdown,
+  markdownToTelegramHtml,
   formatError,
   parseSlashCommand,
   extractCommandValue,

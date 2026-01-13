@@ -20,6 +20,8 @@ const {
   getImagePayload,
   isPathInside,
   extractImageTokens,
+  chunkMarkdown,
+  markdownToTelegramHtml,
   buildPrompt,
 } = require('./message-utils');
 
@@ -302,8 +304,9 @@ async function replyWithResponse(ctx, response) {
   const { cleanedText, imagePaths } = extractImageTokens(response || '', IMAGE_DIR);
   const text = cleanedText.trim();
   if (text) {
-    for (const chunk of chunkText(text, 3500)) {
-      await ctx.reply(chunk);
+    for (const chunk of chunkMarkdown(text, 3000)) {
+      const formatted = markdownToTelegramHtml(chunk) || chunk;
+      await ctx.reply(formatted, { parse_mode: 'HTML', disable_web_page_preview: true });
     }
   }
   const uniqueImages = Array.from(new Set(imagePaths));
