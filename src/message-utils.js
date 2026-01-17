@@ -212,6 +212,16 @@ function getImagePayload(message) {
   return null;
 }
 
+function getDocumentPayload(message) {
+  if (!message || !message.document) return null;
+  return {
+    kind: 'document',
+    fileId: message.document.file_id,
+    mimeType: message.document.mime_type || '',
+    fileName: message.document.file_name || '',
+  };
+}
+
 function isPathInside(baseDir, candidatePath) {
   const base = path.resolve(baseDir);
   const target = path.resolve(candidatePath);
@@ -238,7 +248,35 @@ function extractImageTokens(text, imageDir) {
   return { cleanedText, imagePaths };
 }
 
-function buildPrompt(prompt, imagePaths = [], imageDir, scriptContext) {
+function extractDocumentTokens(text, documentDir) {
+  const documentPaths = [];
+  const tokenRegex = /\[\[(document|file):([^\]]+)\]\]/g;
+  let match;
+  while ((match = tokenRegex.exec(text)) !== null) {
+    const raw = (match[2] || '').trim();
+    if (!raw) continue;
+    const normalized = raw.replace(/^file:\/\//, '');
+    const resolved = path.isAbsolute(normalized)
+      ? normalized
+      : path.join(documentDir, normalized);
+    if (isPathInside(documentDir, resolved)) {
+      documentPaths.push(resolved);
+    } else {
+      console.warn('Ignoring document path outside DOCUMENT_DIR:', resolved);
+    }
+  }
+  const cleanedText = text.replace(tokenRegex, '').trim();
+  return { cleanedText, documentPaths };
+}
+
+function buildPrompt(
+  prompt,
+  imagePaths = [],
+  imageDir,
+  scriptContext,
+  documentPaths = [],
+  documentDir
+) {
   const lines = [];
   const context = (scriptContext || '').trim();
   if (context) {
@@ -255,9 +293,21 @@ function buildPrompt(prompt, imagePaths = [], imageDir, scriptContext) {
     }
     lines.push('Read images from those paths if needed.');
   }
+  if (documentPaths.length > 0) {
+    lines.push('User sent document file(s):');
+    for (const documentPath of documentPaths) {
+      lines.push(`- ${documentPath}`);
+    }
+    lines.push('Read documents from those paths if needed.');
+  }
   lines.push(
     `If you generate an image, save it under ${imageDir} and reply with [[image:/absolute/path]] so the bot can send it.`
   );
+  if (documentDir) {
+    lines.push(
+      `If you generate a document (or need to send a file), save it under ${documentDir} and reply with [[document:/absolute/path]] so the bot can send it.`
+    );
+  }
   return lines.join('\n');
 }
 
@@ -272,7 +322,9 @@ module.exports = {
   extensionFromUrl,
   getAudioPayload,
   getImagePayload,
+  getDocumentPayload,
   isPathInside,
   extractImageTokens,
+  extractDocumentTokens,
   buildPrompt,
 };

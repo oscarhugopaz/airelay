@@ -5,6 +5,7 @@ const test = require('node:test');
 
 const {
   extractImageTokens,
+  extractDocumentTokens,
   isPathInside,
   buildPrompt,
   parseSlashCommand,
@@ -25,6 +26,19 @@ test('extractImageTokens keeps only images inside IMAGE_DIR', () => {
   ].sort());
 });
 
+test('extractDocumentTokens keeps only documents inside DOCUMENT_DIR', () => {
+  const baseDir = path.join(os.tmpdir(), 'aipal-test-docs');
+  const inside = path.join(baseDir, 'guide.pdf');
+  const outside = path.join(os.tmpdir(), 'outside.pdf');
+  const text = `hello [[document:${inside}]] [[file:${outside}]] [[document:relative.pdf]]`;
+  const { cleanedText, documentPaths } = extractDocumentTokens(text, baseDir);
+  assert.equal(cleanedText, 'hello');
+  assert.deepEqual(documentPaths.sort(), [
+    inside,
+    path.join(baseDir, 'relative.pdf'),
+  ].sort());
+});
+
 test('isPathInside detects containment', () => {
   const baseDir = path.join(os.tmpdir(), 'aipal-test');
   assert.equal(isPathInside(baseDir, path.join(baseDir, 'file.txt')), true);
@@ -33,14 +47,24 @@ test('isPathInside detects containment', () => {
 
 test('buildPrompt includes image hints', () => {
   const baseDir = '/tmp/aipal/images';
-  const prompt = buildPrompt('hello', ['/tmp/aipal/images/a.png'], baseDir);
+  const docDir = '/tmp/aipal/documents';
+  const prompt = buildPrompt(
+    'hello',
+    ['/tmp/aipal/images/a.png'],
+    baseDir,
+    '',
+    [],
+    docDir
+  );
   assert.match(prompt, /User sent image file/);
   assert.match(prompt, /\[\[image:\/absolute\/path\]\]/);
+  assert.match(prompt, /\[\[document:\/absolute\/path\]\]/);
 });
 
 test('buildPrompt includes slash context', () => {
   const baseDir = '/tmp/aipal/images';
-  const prompt = buildPrompt('hello', [], baseDir, '/inbox output:\n1) foo');
+  const docDir = '/tmp/aipal/documents';
+  const prompt = buildPrompt('hello', [], baseDir, '/inbox output:\n1) foo', [], docDir);
   assert.match(prompt, /Context from last slash command output/);
   assert.match(prompt, /\/inbox output/);
 });

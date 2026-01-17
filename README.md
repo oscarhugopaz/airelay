@@ -10,7 +10,7 @@ Minimal Telegram bot that forwards messages to a local CLI agent (Codex by defau
 - Runs your configured CLI agent for every message
 - Queues requests per chat to avoid overlapping runs
 - Keeps Codex thread state when JSON output is detected
-- Handles text, audio (via Parakeet), and images
+- Handles text, audio (via Parakeet), images, and documents
 - Supports `/model` and `/thinking` to tweak the agent at runtime
 
 ## Requirements
@@ -40,6 +40,7 @@ Open Telegram, send `/start`, then any message.
 - Text: send a message and get the agent response
 - Audio: send a voice note or audio file (transcribed with Parakeet)
 - Images: send a photo or image file (caption becomes the prompt)
+- Documents: send a file (caption becomes the prompt)
 - `/reset`: clear the chat session (drops the Codex thread id)
 - `/model <name>`: set the model (persisted in `config.json`)
 - `/thinking <level>`: set reasoning effort (mapped to `model_reasoning_effort`, persisted in `config.json`)
@@ -51,6 +52,13 @@ If the agent generates an image, save it under the image folder (default: OS tem
 [[image:/absolute/path]]
 ```
 The bot will send the image back to Telegram.
+
+### Documents in responses
+If the agent generates a document (or needs to send a file), save it under the documents folder (default: OS temp under `aipal/documents`) and reply with:
+```
+[[document:/absolute/path]]
+```
+The bot will send the document back to Telegram.
 
 ## Configuration
 The only required environment variable is `TELEGRAM_BOT_TOKEN` in `.env`.

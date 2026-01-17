@@ -18,8 +18,10 @@ const {
   extensionFromUrl,
   getAudioPayload,
   getImagePayload,
+  getDocumentPayload,
   isPathInside,
   extractImageTokens,
+  extractDocumentTokens,
   chunkMarkdown,
   markdownToTelegramHtml,
   buildPrompt,
@@ -65,6 +67,10 @@ const PARAKEET_TIMEOUT_MS = 120000;
 const IMAGE_DIR = path.resolve(path.join(os.tmpdir(), 'aipal', 'images'));
 const IMAGE_TTL_HOURS = 24;
 const IMAGE_CLEANUP_INTERVAL_MS = 60 * 60 * 1000;
+
+const DOCUMENT_DIR = path.resolve(path.join(os.tmpdir(), 'aipal', 'documents'));
+const DOCUMENT_TTL_HOURS = 24;
+const DOCUMENT_CLEANUP_INTERVAL_MS = 60 * 60 * 1000;
 
 const SCRIPTS_DIR =
   process.env.AIPAL_SCRIPTS_DIR ||
@@ -284,7 +290,7 @@ async function safeUnlink(filePath) {
   } catch {}
 }
 
-async function cleanupOldFiles(dir, maxAgeMs) {
+async function cleanupOldFiles(dir, maxAgeMs, label) {
   try {
     const entries = await fs.readdir(dir, { withFileTypes: true });
     const now = Date.now();
@@ -298,7 +304,7 @@ async function cleanupOldFiles(dir, maxAgeMs) {
     }
   } catch (err) {
     if (err && err.code !== 'ENOENT') {
-      console.warn('Image cleanup failed:', err);
+      console.warn(`${label} cleanup failed:`, err);
     }
   }
 }
@@ -306,10 +312,23 @@ async function cleanupOldFiles(dir, maxAgeMs) {
 function startImageCleanup() {
   if (!Number.isFinite(IMAGE_TTL_HOURS) || IMAGE_TTL_HOURS <= 0) return;
   const maxAgeMs = IMAGE_TTL_HOURS * 60 * 60 * 1000;
-  const run = () => cleanupOldFiles(IMAGE_DIR, maxAgeMs);
+  const run = () => cleanupOldFiles(IMAGE_DIR, maxAgeMs, 'Image');
   run();
   if (Number.isFinite(IMAGE_CLEANUP_INTERVAL_MS) && IMAGE_CLEANUP_INTERVAL_MS > 0) {
     const timer = setInterval(run, IMAGE_CLEANUP_INTERVAL_MS);
+    if (typeof timer.unref === 'function') {
+      timer.unref();
+    }
+  }
+}
+
+function startDocumentCleanup() {
+  if (!Number.isFinite(DOCUMENT_TTL_HOURS) || DOCUMENT_TTL_HOURS <= 0) return;
+  const maxAgeMs = DOCUMENT_TTL_HOURS * 60 * 60 * 1000;
+  const run = () => cleanupOldFiles(DOCUMENT_DIR, maxAgeMs, 'Document');
+  run();
+  if (Number.isFinite(DOCUMENT_CLEANUP_INTERVAL_MS) && DOCUMENT_CLEANUP_INTERVAL_MS > 0) {
+    const timer = setInterval(run, DOCUMENT_CLEANUP_INTERVAL_MS);
     if (typeof timer.unref === 'function') {
       timer.unref();
     }
@@ -324,7 +343,9 @@ async function runAgentForChat(chatId, prompt, options = {}) {
     prompt,
     options.imagePaths || [],
     IMAGE_DIR,
-    options.scriptContext
+    options.scriptContext,
+    options.documentPaths || [],
+    DOCUMENT_DIR
   );
   const promptBase64 = Buffer.from(finalPrompt, 'utf8').toString('base64');
   const promptExpression = '"$PROMPT"';
@@ -363,7 +384,14 @@ async function runAgentForChat(chatId, prompt, options = {}) {
 }
 
 async function replyWithResponse(ctx, response) {
-  const { cleanedText, imagePaths } = extractImageTokens(response || '', IMAGE_DIR);
+  const { cleanedText: afterImages, imagePaths } = extractImageTokens(
+    response || '',
+    IMAGE_DIR
+  );
+  const { cleanedText, documentPaths } = extractDocumentTokens(
+    afterImages,
+    DOCUMENT_DIR
+  );
   const text = cleanedText.trim();
   if (text) {
     for (const chunk of chunkMarkdown(text, 3000)) {
@@ -384,7 +412,20 @@ async function replyWithResponse(ctx, response) {
       console.warn('Failed to send image:', imagePath, err);
     }
   }
-  if (!text && uniqueImages.length === 0) {
+  const uniqueDocuments = Array.from(new Set(documentPaths));
+  for (const documentPath of uniqueDocuments) {
+    try {
+      if (!isPathInside(DOCUMENT_DIR, documentPath)) {
+        console.warn('Skipping document outside DOCUMENT_DIR:', documentPath);
+        continue;
+      }
+      await fs.access(documentPath);
+      await ctx.replyWithDocument({ source: documentPath });
+    } catch (err) {
+      console.warn('Failed to send document:', documentPath, err);
+    }
+  }
+  if (!text && uniqueImages.length === 0 && uniqueDocuments.length === 0) {
     await ctx.reply('(no response)');
   }
 }
@@ -572,7 +613,38 @@ bot.on(['photo', 'document'], (ctx) => {
   });
 });
 
+bot.on('document', (ctx) => {
+  const chatId = ctx.chat.id;
+  if (getAudioPayload(ctx.message) || getImagePayload(ctx.message)) return;
+  const payload = getDocumentPayload(ctx.message);
+  if (!payload) return;
+
+  enqueue(chatId, async () => {
+    const stopTyping = startTyping(ctx);
+    let documentPath;
+    try {
+      documentPath = await downloadTelegramFile(ctx, payload, {
+        dir: DOCUMENT_DIR,
+        prefix: 'document',
+        errorLabel: 'document',
+      });
+      const caption = (ctx.message.caption || '').trim();
+      const prompt = caption || 'User sent a document.';
+      const response = await runAgentForChat(chatId, prompt, {
+        documentPaths: [documentPath],
+      });
+      await replyWithResponse(ctx, response);
+    } catch (err) {
+      console.error(err);
+      await replyWithError(ctx, 'Error processing document.', err);
+    } finally {
+      stopTyping();
+    }
+  });
+});
+
 startImageCleanup();
+startDocumentCleanup();
 hydrateGlobalSettings().catch((err) => console.warn('Failed to load config settings:', err));
 bot.launch();
 
