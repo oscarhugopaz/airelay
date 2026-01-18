@@ -7,6 +7,7 @@
   "type": "commonjs",
   "scripts": {
     "build": "node --check src/index.js",
+    "dev": "node --watch src/index.js",
     "lint": "node --check src/index.js src/message-utils.js test/message-utils.test.js",
     "start": "node src/index.js",
     "test": "node --test"
