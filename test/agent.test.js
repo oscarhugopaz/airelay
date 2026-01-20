@@ -53,3 +53,21 @@ test('parseAgentOutput extracts claude session and result', () => {
   assert.equal(parsed.text, 'hola');
   assert.equal(parsed.sawJson, true);
 });
+
+test('buildAgentCommand builds gemini headless command', () => {
+  const agent = getAgent('gemini');
+  const command = agent.buildCommand({ prompt: 'hello' });
+  assert.match(command, /^gemini /);
+  assert.match(command, /-p 'hello'/);
+  assert.match(command, /--output-format json/);
+  assert.match(command, /--yolo/);
+});
+
+test('parseAgentOutput extracts gemini response', () => {
+  const agent = getAgent('gemini');
+  const output = JSON.stringify({ response: 'hola' });
+  const parsed = agent.parseOutput(output);
+  assert.equal(parsed.threadId, undefined);
+  assert.equal(parsed.text, 'hola');
+  assert.equal(parsed.sawJson, true);
+});

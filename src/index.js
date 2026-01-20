@@ -107,7 +107,6 @@ const queues = new Map();
 const threads = new Map();
 const lastScriptOutputs = new Map();
 const SCRIPT_CONTEXT_MAX_CHARS = 8000;
-let globalModel;
 let globalThinking;
 let globalAgent = AGENT_CODEX;
 
@@ -145,8 +144,6 @@ async function buildBootstrapContext() {
 
 async function hydrateGlobalSettings() {
   const config = await readConfig();
-  if (config.model) globalModel = config.model;
-  if (config.thinking) globalThinking = config.thinking;
   if (config.agent) globalAgent = normalizeAgent(config.agent);
 }
 
@@ -387,7 +384,6 @@ async function runAgentForChat(chatId, prompt, options = {}) {
       ? `${bootstrap}\n\n${promptWithContext}`
       : bootstrap;
   }
-  const model = globalModel;
   const thinking = globalThinking;
   const finalPrompt = buildPrompt(
     promptWithContext,
@@ -403,7 +399,6 @@ async function runAgentForChat(chatId, prompt, options = {}) {
     prompt: finalPrompt,
     promptExpression,
     threadId,
-    model,
     thinking,
   });
   const command = [
@@ -515,26 +510,6 @@ function enqueue(chatId, fn) {
 
 bot.start((ctx) => ctx.reply(`Ready. Send a message and I will pass it to ${getAgentLabel(globalAgent)}.`));
 
-bot.command('model', async (ctx) => {
-  const value = extractCommandValue(ctx.message.text);
-  if (!value) {
-    if (globalModel) {
-      ctx.reply(`Current model: ${globalModel}`);
-    } else {
-      ctx.reply('No model set. Use /model <name>.');
-    }
-    return;
-  }
-  try {
-    globalModel = value;
-    await updateConfig({ model: value });
-    ctx.reply(`Model set to ${value}.`);
-  } catch (err) {
-    console.error(err);
-    await replyWithError(ctx, 'Failed to persist model.', err);
-  }
-});
-
 bot.command('thinking', async (ctx) => {
   const value = extractCommandValue(ctx.message.text);
   if (!value) {
@@ -547,22 +522,21 @@ bot.command('thinking', async (ctx) => {
   }
   try {
     globalThinking = value;
-    await updateConfig({ thinking: value });
     ctx.reply(`Reasoning effort set to ${value}.`);
   } catch (err) {
     console.error(err);
-    await replyWithError(ctx, 'Failed to persist reasoning effort.', err);
+    await replyWithError(ctx, 'Failed to update reasoning effort.', err);
   }
 });
 
 bot.command('agent', async (ctx) => {
   const value = extractCommandValue(ctx.message.text);
   if (!value) {
-    ctx.reply(`Current agent: ${getAgentLabel(globalAgent)}. Use /agent codex|claude.`);
+    ctx.reply(`Current agent: ${getAgentLabel(globalAgent)}. Use /agent codex|claude|gemini.`);
     return;
   }
   if (!isKnownAgent(value)) {
-    ctx.reply('Unknown agent. Use /agent codex|claude.');
+    ctx.reply('Unknown agent. Use /agent codex|claude|gemini.');
     return;
   }
   const normalized = normalizeAgent(value);
@@ -593,7 +567,7 @@ bot.on('text', (ctx) => {
   const slash = parseSlashCommand(text);
   if (slash) {
     const normalized = slash.name.toLowerCase();
-    if (['start', 'model', 'thinking', 'agent', 'reset'].includes(normalized)) return;
+    if (['start', 'thinking', 'agent', 'reset'].includes(normalized)) return;
     enqueue(chatId, async () => {
       const stopTyping = startTyping(ctx);
       try {

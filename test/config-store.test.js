@@ -21,10 +21,10 @@ test('readConfig returns empty object when file is missing', async () => {
 test('updateConfig writes and merges config', async () => {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aipal-config-'));
   const { updateConfig, readConfig } = loadConfigStore(dir);
-  await updateConfig({ model: 'gpt-5.2' });
-  await updateConfig({ thinking: 'medium' });
+  await updateConfig({ agent: 'codex' });
+  await updateConfig({ foo: 'bar' });
   const config = await readConfig();
-  assert.deepEqual(config, { model: 'gpt-5.2', thinking: 'medium' });
+  assert.deepEqual(config, { agent: 'codex', foo: 'bar' });
 });
 
 test('readMemory returns missing state when memory file does not exist', async () => {

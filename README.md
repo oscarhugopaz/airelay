@@ -11,11 +11,11 @@ Minimal Telegram bot that forwards messages to a local CLI agent (Codex by defau
 - Queues requests per chat to avoid overlapping runs
 - Keeps agent session state when JSON output is detected
 - Handles text, audio (via Parakeet), images, and documents
-- Supports `/model`, `/thinking`, and `/agent` to tweak the agent at runtime
+- Supports `/thinking` and `/agent` to tweak the agent at runtime
 
 ## Requirements
 - Node.js 18+
-- Agent CLI on PATH (default: `codex`, or `claude` when configured)
+- Agent CLI on PATH (default: `codex`, or `claude` / `gemini` when configured)
 - Audio (optional): `parakeet-mlx` + `ffmpeg`
 
 ## Quick start
@@ -42,9 +42,8 @@ Open Telegram, send `/start`, then any message.
 - Images: send a photo or image file (caption becomes the prompt)
 - Documents: send a file (caption becomes the prompt)
 - `/reset`: clear the chat session (drops the stored session id)
-- `/model <name>`: set the model (persisted in `config.json`)
-- `/thinking <level>`: set reasoning effort (mapped to `model_reasoning_effort`, persisted in `config.json`)
-- `/agent <codex|claude>`: set the CLI agent (persisted in `config.json`)
+- `/thinking <level>`: set reasoning effort (mapped to `model_reasoning_effort`) for this session
+- `/agent <codex|claude|gemini>`: set the CLI agent (persisted in `config.json`)
 - `/<script> [args]`: run an executable script from `~/.config/aibot/scripts`
 
 ### Images in responses
@@ -69,15 +68,13 @@ Optional:
 - `AIPAL_SCRIPT_TIMEOUT_MS`: timeout for slash scripts (default: 120000)
 
 ## Config file (optional)
-The bot stores `/model`, `/thinking`, and `/agent` in a JSON file at:
+The bot stores `/agent` in a JSON file at:
 `~/.config/aipal/config.json` (or `$XDG_CONFIG_HOME/aipal/config.json`).
 
 Example:
 ```json
 {
-  "agent": "codex",
-  "model": "gpt-5.2",
-  "thinking": "medium"
+  "agent": "codex"
 }
 ```
 

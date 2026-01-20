@@ -19,5 +19,14 @@ All notable changes to this project will be documented in this file.
 ### Documentation
 - Document memory.md alongside config.json.
 
+## [0.1.5] - 2026-01-20
+### Added
+- Agent registry with adapters for Codex, Claude (headless), and Gemini.
+
+### Changed
+- Claude runs in headless mode with a PTY wrapper to avoid hangs.
+- Gemini runs in headless JSON mode with YOLO auto-approval.
+- `/model` support removed; model is no longer passed between CLIs.
+
 ## [0.1.2] - 2026-01-13
 - Earlier changes were tracked only in GitHub releases.

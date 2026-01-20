@@ -1,9 +1,11 @@
 const codex = require('./codex');
 const claude = require('./claude');
+const gemini = require('./gemini');
 
 const agents = new Map([
   [codex.id, codex],
   [claude.id, claude],
+  [gemini.id, gemini],
 ]);
 
 const DEFAULT_AGENT = codex.id;
