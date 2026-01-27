@@ -15,14 +15,14 @@ function formatTimestampInTimeZone(date, timeZone) {
   for (const part of parts) {
     if (part.type !== 'literal') values[part.type] = part.value;
   }
-  return `${values.year}-${values.month}-${values.day} ${values.hour}:${values.minute}`;
+  return `${values.year}${values.month}${values.day}T${values.hour}${values.minute}`;
 }
 
 function buildTimestampPrefix(options = {}) {
   const date = options.date instanceof Date ? options.date : new Date();
   const timeZone = options.timeZone || DEFAULT_TIME_ZONE;
   const formatted = formatTimestampInTimeZone(date, timeZone);
-  return `[${formatted} ${timeZone}]`;
+  return `[${formatted}]`;
 }
 
 function prefixTextWithTimestamp(text, options = {}) {
@@ -36,4 +36,3 @@ module.exports = {
   buildTimestampPrefix,
   prefixTextWithTimestamp,
 };
-
