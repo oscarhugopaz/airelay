@@ -54,6 +54,7 @@ const {
 } = require('./access-control');
 
 const { ScriptManager } = require('./script-manager');
+const { prefixTextWithTimestamp, DEFAULT_TIME_ZONE } = require('./time-utils');
 
 function formatLogTimestamp(date = new Date()) {
   const pad = (value) => String(value).padStart(2, '0');
@@ -551,7 +552,10 @@ function startDocumentCleanup() {
 async function runAgentOneShot(prompt) {
   const agent = getAgent(globalAgent);
   const thinking = globalThinking;
-  const promptText = String(prompt || '');
+  let promptText = String(prompt || '');
+  if (agent.id === 'claude') {
+    promptText = prefixTextWithTimestamp(promptText, { timeZone: DEFAULT_TIME_ZONE });
+  }
   const promptBase64 = Buffer.from(promptText, 'utf8').toString('base64');
   const promptExpression = '"$PROMPT"';
   const agentCmd = agent.buildCommand({
@@ -613,6 +617,11 @@ async function runAgentForChat(chatId, prompt, options = {}) {
   const threadId = threads.get(threadKey);
   const agent = getAgent(globalAgent);
   let promptWithContext = prompt;
+  if (agent.id === 'claude') {
+    promptWithContext = prefixTextWithTimestamp(promptWithContext, {
+      timeZone: DEFAULT_TIME_ZONE,
+    });
+  }
   if (!threadId) {
     const bootstrap = await buildBootstrapContext();
     promptWithContext = promptWithContext
@@ -1160,5 +1169,32 @@ hydrateGlobalSettings()
   .catch((err) => console.warn('Failed to load config settings:', err));
 bot.launch();
 
-process.once('SIGINT', () => bot.stop('SIGINT'));
-process.once('SIGTERM', () => bot.stop('SIGTERM'));
+let shutdownStarted = false;
+function shutdown(signal) {
+  if (shutdownStarted) return;
+  shutdownStarted = true;
+  console.info(`Shutting down (${signal})...`);
+
+  try {
+    if (cronScheduler && typeof cronScheduler.stop === 'function') {
+      cronScheduler.stop();
+    }
+  } catch (err) {
+    console.warn('Failed to stop cron scheduler:', err);
+  }
+
+  try {
+    bot.stop(signal);
+  } catch (err) {
+    console.warn('Failed to stop bot:', err);
+  }
+
+  const timer = setTimeout(() => {
+    console.warn('Forcing process exit after shutdown timeout.');
+    process.exit(0);
+  }, 2000);
+  if (typeof timer.unref === 'function') timer.unref();
+}
+
+process.once('SIGINT', () => shutdown('SIGINT'));
+process.once('SIGTERM', () => shutdown('SIGTERM'));

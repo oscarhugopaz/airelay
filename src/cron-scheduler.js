@@ -30,17 +30,25 @@ function startCronScheduler(options = {}) {
   const { onTrigger, chatId } = options;
   if (!onTrigger || !chatId) {
     console.warn('Cron scheduler requires onTrigger and chatId');
-    return { tasks: new Map(), reload: () => {} };
+    return { tasks: new Map(), reload: async () => 0, stop: () => {} };
   }
 
   const tasks = new Map();
 
-  async function scheduleJobs() {
-    // Stop existing tasks
+  function stop() {
     for (const [id, task] of tasks) {
-      task.stop();
+      try {
+        task.stop();
+      } catch (err) {
+        console.warn(`Failed to stop cron task ${id}:`, err);
+      }
       tasks.delete(id);
     }
+  }
+
+  async function scheduleJobs() {
+    // Stop existing tasks
+    stop();
 
     const jobs = await loadCronJobs();
     for (const job of jobs) {
@@ -82,6 +90,7 @@ function startCronScheduler(options = {}) {
   return {
     tasks,
     reload: scheduleJobs,
+    stop,
   };
 }
 
