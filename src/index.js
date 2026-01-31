@@ -92,7 +92,10 @@ if (!BOT_TOKEN) {
 
 
 const PARAKEET_CMD = 'parakeet-mlx';
-const PARAKEET_TIMEOUT_MS = 120000;
+const PARAKEET_TIMEOUT_MS = readNumberEnv(
+  process.env.AIRELAY_PARAKEET_TIMEOUT_MS,
+  120000
+);
 
 const IMAGE_DIR = path.resolve(path.join(os.tmpdir(), 'airelay', 'images'));
 const IMAGE_TTL_HOURS = 24;
@@ -1230,6 +1233,12 @@ bot.on(['voice', 'audio', 'document'], (ctx, next) => {
         await replyWithError(
           ctx,
           "I can't find parakeet-mlx. Install it and try again.",
+          err
+        );
+      } else if (err && err.code === 'ETIMEDOUT') {
+        await replyWithError(
+          ctx,
+          'Audio transcription timed out. Try a shorter audio or increase AIRELAY_PARAKEET_TIMEOUT_MS (milliseconds) and restart the bot.',
           err
         );
       } else {

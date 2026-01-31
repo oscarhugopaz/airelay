@@ -93,6 +93,7 @@ Optional:
 - `AIRELAY_ALLOW_OPEN_BOT`: set to `true` to allow starting without `ALLOWED_USERS` (NOT recommended)
 - `AIRELAY_DOWNLOAD_TIMEOUT_MS`: timeout for Telegram file downloads (default: 60000)
 - `AIRELAY_MAX_DOWNLOAD_BYTES`: max size for Telegram file downloads in bytes (default: 26214400)
+- `AIRELAY_PARAKEET_TIMEOUT_MS`: timeout for audio transcription via Parakeet in ms (default: 120000)
 - `AIRELAY_CODEX_YOLO`: set to `true` to enable Codex `--yolo` (default: false)
 - `AIRELAY_OPENCODE_PERMISSION`: JSON string for OpenCode permissions (defaults to deny)
 - `AIRELAY_OPENCODE_ALLOW_ALL`: set to `true` to use OpenCode allow-all permissions (default: false)
