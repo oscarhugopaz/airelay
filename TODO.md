@@ -43,6 +43,12 @@ Este documento lista acciones de hardening recomendadas para este proyecto. No s
 
 ## P2 (Medio) — defensa en profundidad en filesystem
 
+- [ ] **Hacer configurable el directorio de almacenamiento temporal**
+  - Problema: hoy se usa `os.tmpdir()` (p.ej. `/var/folders/.../T`) para descargas y adjuntos; es correcto para “temporal”, pero es menos predecible operacionalmente y puede cambiar/limpiarse por el sistema.
+  - Recomendación: agregar env var tipo `AIRELAY_STORAGE_DIR` para definir el base dir (default: `path.join(os.tmpdir(), 'airelay')`) y derivar `IMAGE_DIR`/`DOCUMENT_DIR` desde ahí.
+  - Nota: mantener validación de rutas (`isPathInside`) y considerar si audios/transcripciones deben seguir siendo efímeros (borrado inmediato) o también configurables.
+  - Zonas relevantes: definición de `IMAGE_DIR`/`DOCUMENT_DIR` y `downloadTelegramFile` en [src/index.js](src/index.js)
+
 - [ ] **Endurecer permisos de `SCRIPTS_DIR`**
   - Estado actual: se validan nombre y path del script y se requiere ejecutable (bien), pero el riesgo real es quién puede escribir ahí.
   - Recomendación: owner-only (`0700` o equivalente), usuario dedicado, no permitir escritura por otros usuarios/grupos.
