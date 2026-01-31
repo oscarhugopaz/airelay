@@ -12,17 +12,17 @@ test('buildAgentCommand uses exec resume with thread id', () => {
 });
 
 test('buildAgentCommand includes codex --yolo when enabled', () => {
-  const previous = process.env.AIPAL_CODEX_YOLO;
-  process.env.AIPAL_CODEX_YOLO = 'true';
+  const previous = process.env.AIRELAY_CODEX_YOLO;
+  process.env.AIRELAY_CODEX_YOLO = 'true';
   try {
     const agent = getAgent('codex');
     const command = agent.buildCommand({ prompt: 'hello' });
     assert.match(command, /--yolo/);
   } finally {
     if (previous == null) {
-      delete process.env.AIPAL_CODEX_YOLO;
+      delete process.env.AIRELAY_CODEX_YOLO;
     } else {
-      process.env.AIPAL_CODEX_YOLO = previous;
+      process.env.AIRELAY_CODEX_YOLO = previous;
     }
   }
 });
@@ -60,17 +60,17 @@ test('buildAgentCommand builds claude headless command with resume', () => {
 });
 
 test('buildAgentCommand includes claude dangerously-skip-permissions when enabled', () => {
-  const previous = process.env.AIPAL_CLAUDE_DANGEROUSLY_SKIP_PERMISSIONS;
-  process.env.AIPAL_CLAUDE_DANGEROUSLY_SKIP_PERMISSIONS = 'true';
+  const previous = process.env.AIRELAY_CLAUDE_DANGEROUSLY_SKIP_PERMISSIONS;
+  process.env.AIRELAY_CLAUDE_DANGEROUSLY_SKIP_PERMISSIONS = 'true';
   try {
     const agent = getAgent('claude');
     const command = agent.buildCommand({ prompt: 'hello' });
     assert.match(command, /--dangerously-skip-permissions/);
   } finally {
     if (previous == null) {
-      delete process.env.AIPAL_CLAUDE_DANGEROUSLY_SKIP_PERMISSIONS;
+      delete process.env.AIRELAY_CLAUDE_DANGEROUSLY_SKIP_PERMISSIONS;
     } else {
-      process.env.AIPAL_CLAUDE_DANGEROUSLY_SKIP_PERMISSIONS = previous;
+      process.env.AIRELAY_CLAUDE_DANGEROUSLY_SKIP_PERMISSIONS = previous;
     }
   }
 });
@@ -94,17 +94,17 @@ test('buildAgentCommand builds gemini headless command', () => {
 });
 
 test('buildAgentCommand includes gemini --yolo when enabled', () => {
-  const previous = process.env.AIPAL_GEMINI_YOLO;
-  process.env.AIPAL_GEMINI_YOLO = 'true';
+  const previous = process.env.AIRELAY_GEMINI_YOLO;
+  process.env.AIRELAY_GEMINI_YOLO = 'true';
   try {
     const agent = getAgent('gemini');
     const command = agent.buildCommand({ prompt: 'hello' });
     assert.match(command, /--yolo/);
   } finally {
     if (previous == null) {
-      delete process.env.AIPAL_GEMINI_YOLO;
+      delete process.env.AIRELAY_GEMINI_YOLO;
     } else {
-      process.env.AIPAL_GEMINI_YOLO = previous;
+      process.env.AIRELAY_GEMINI_YOLO = previous;
     }
   }
 });
@@ -143,17 +143,17 @@ test('buildAgentCommand builds opencode command with env and json flag', () => {
 });
 
 test('buildAgentCommand uses allow-all opencode permission when enabled', () => {
-  const previous = process.env.AIPAL_OPENCODE_ALLOW_ALL;
-  process.env.AIPAL_OPENCODE_ALLOW_ALL = 'true';
+  const previous = process.env.AIRELAY_OPENCODE_ALLOW_ALL;
+  process.env.AIRELAY_OPENCODE_ALLOW_ALL = 'true';
   try {
     const agent = getAgent('opencode');
     const command = agent.buildCommand({ prompt: 'hello' });
     assert.match(command, /^OPENCODE_PERMISSION='\{"\*": "allow"\}' opencode run /);
   } finally {
     if (previous == null) {
-      delete process.env.AIPAL_OPENCODE_ALLOW_ALL;
+      delete process.env.AIRELAY_OPENCODE_ALLOW_ALL;
     } else {
-      process.env.AIPAL_OPENCODE_ALLOW_ALL = previous;
+      process.env.AIRELAY_OPENCODE_ALLOW_ALL = previous;
     }
   }
 });

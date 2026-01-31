@@ -15,7 +15,7 @@ function safeJsonParse(value) {
 function buildCommand({ prompt, promptExpression, threadId }) {
   const promptValue = resolvePromptValue(prompt, promptExpression);
   const args = ['-p', promptValue, '--output-format', GEMINI_OUTPUT_FORMAT];
-  if (String(process.env.AIPAL_GEMINI_YOLO || '').toLowerCase() === 'true') {
+  if (String(process.env.AIRELAY_GEMINI_YOLO || '').toLowerCase() === 'true') {
     args.push('--yolo');
   }
   if (threadId) {

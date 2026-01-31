@@ -12,14 +12,14 @@ function loadConfigStore(configHome) {
 }
 
 test('readConfig returns empty object when file is missing', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aipal-config-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'airelay-config-'));
   const { readConfig } = loadConfigStore(dir);
   const config = await readConfig();
   assert.deepEqual(config, {});
 });
 
 test('updateConfig writes and merges config', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aipal-config-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'airelay-config-'));
   const { updateConfig, readConfig } = loadConfigStore(dir);
   await updateConfig({ agent: 'codex' });
   await updateConfig({ foo: 'bar' });
@@ -28,7 +28,7 @@ test('updateConfig writes and merges config', async () => {
 });
 
 test('readMemory returns missing state when memory file does not exist', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aipal-config-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'airelay-config-'));
   const { readMemory } = loadConfigStore(dir);
   const memory = await readMemory();
   assert.equal(memory.exists, false);
@@ -37,7 +37,7 @@ test('readMemory returns missing state when memory file does not exist', async (
 });
 
 test('readMemory loads memory content', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aipal-config-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'airelay-config-'));
   const { readMemory, MEMORY_PATH } = loadConfigStore(dir);
   await fs.mkdir(path.dirname(MEMORY_PATH), { recursive: true });
   await fs.writeFile(MEMORY_PATH, 'hello memory');
@@ -48,7 +48,7 @@ test('readMemory loads memory content', async () => {
 });
 
 test('readSoul returns missing state when soul file does not exist', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aipal-config-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'airelay-config-'));
   const { readSoul } = loadConfigStore(dir);
   const soul = await readSoul();
   assert.equal(soul.exists, false);
@@ -57,7 +57,7 @@ test('readSoul returns missing state when soul file does not exist', async () =>
 });
 
 test('readSoul loads soul content', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aipal-config-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'airelay-config-'));
   const { readSoul, SOUL_PATH } = loadConfigStore(dir);
   await fs.mkdir(path.dirname(SOUL_PATH), { recursive: true });
   await fs.writeFile(SOUL_PATH, 'hello soul');
@@ -68,14 +68,14 @@ test('readSoul loads soul content', async () => {
 });
 
 test('loadThreads returns empty map when threads file is missing', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aipal-config-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'airelay-config-'));
   const { loadThreads } = loadConfigStore(dir);
   const threads = await loadThreads();
   assert.equal(threads.size, 0);
 });
 
 test('saveThreads writes and loadThreads reads threads', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aipal-config-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'airelay-config-'));
   const { loadThreads, saveThreads, THREADS_PATH } = loadConfigStore(dir);
 
   const input = new Map([

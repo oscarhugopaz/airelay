@@ -1,4 +1,4 @@
-# Aipal: Telegram Codex Bot
+# Airelay: Telegram CLI Bot
 
 ![CI](https://github.com/oscarhugopaz/airelay/actions/workflows/ci.yml/badge.svg?branch=main)
 
@@ -47,24 +47,24 @@ Open Telegram, send `/start`, then any message.
 - `/cron [list|reload|chatid]`: manage cron jobs (see below)
 - `/help`: list available commands and scripts
 - `/document_scripts confirm`: generate short descriptions for scripts (writes `scripts.json`; requires `ALLOWED_USERS`)
-- `/<script> [args]`: run an executable script from `~/.config/aipal/scripts`
+- `/<script> [args]`: run an executable script from `~/.config/airelay/scripts`
 
 ### Cron jobs
-Cron jobs are loaded from `~/.config/aipal/cron.json` (or `$XDG_CONFIG_HOME/aipal/cron.json`) and are sent to a single Telegram chat (the `cronChatId` configured in `config.json`).
+Cron jobs are loaded from `~/.config/airelay/cron.json` (or `$XDG_CONFIG_HOME/airelay/cron.json`) and are sent to a single Telegram chat (the `cronChatId` configured in `config.json`).
 
 - `/cron chatid`: prints your chat ID (use this value as `cronChatId`).
 - `/cron list`: lists configured jobs.
 - `/cron reload`: reloads `cron.json` without restarting the bot.
 
 ### Images in responses
-If the agent generates an image, save it under the image folder (default: OS temp under `aipal/images`) and reply with:
+If the agent generates an image, save it under the image folder (default: OS temp under `airelay/images`) and reply with:
 ```
 [[image:/absolute/path]]
 ```
 The bot will send the image back to Telegram.
 
 ### Documents in responses
-If the agent generates a document (or needs to send a file), save it under the documents folder (default: OS temp under `aipal/documents`) and reply with:
+If the agent generates a document (or needs to send a file), save it under the documents folder (default: OS temp under `airelay/documents`) and reply with:
 ```
 [[document:/absolute/path]]
 ```
@@ -74,21 +74,21 @@ The bot will send the document back to Telegram.
 The only required environment variable is `TELEGRAM_BOT_TOKEN` in `.env`.
 
 Optional:
-- `AIPAL_SCRIPTS_DIR`: directory for slash scripts (default: `~/.config/aipal/scripts`)
-- `AIPAL_SCRIPT_TIMEOUT_MS`: timeout for slash scripts (default: 120000)
+- `AIRELAY_SCRIPTS_DIR`: directory for slash scripts (default: `~/.config/airelay/scripts`)
+- `AIRELAY_SCRIPT_TIMEOUT_MS`: timeout for slash scripts (default: 120000)
 - `ALLOWED_USERS`: comma-separated list of Telegram user IDs allowed to interact with the bot (if unset/empty, the bot refuses to start)
-- `AIPAL_ALLOW_OPEN_BOT`: set to `true` to allow starting without `ALLOWED_USERS` (NOT recommended)
-- `AIPAL_DOWNLOAD_TIMEOUT_MS`: timeout for Telegram file downloads (default: 60000)
-- `AIPAL_MAX_DOWNLOAD_BYTES`: max size for Telegram file downloads in bytes (default: 26214400)
-- `AIPAL_CODEX_YOLO`: set to `true` to enable Codex `--yolo` (default: false)
-- `AIPAL_GEMINI_YOLO`: set to `true` to enable Gemini `--yolo` (default: false)
-- `AIPAL_CLAUDE_DANGEROUSLY_SKIP_PERMISSIONS`: set to `true` to enable Claude `--dangerously-skip-permissions` (default: false)
-- `AIPAL_OPENCODE_PERMISSION`: JSON string for OpenCode permissions (defaults to deny)
-- `AIPAL_OPENCODE_ALLOW_ALL`: set to `true` to use OpenCode allow-all permissions (default: false)
+- `AIRELAY_ALLOW_OPEN_BOT`: set to `true` to allow starting without `ALLOWED_USERS` (NOT recommended)
+- `AIRELAY_DOWNLOAD_TIMEOUT_MS`: timeout for Telegram file downloads (default: 60000)
+- `AIRELAY_MAX_DOWNLOAD_BYTES`: max size for Telegram file downloads in bytes (default: 26214400)
+- `AIRELAY_CODEX_YOLO`: set to `true` to enable Codex `--yolo` (default: false)
+- `AIRELAY_GEMINI_YOLO`: set to `true` to enable Gemini `--yolo` (default: false)
+- `AIRELAY_CLAUDE_DANGEROUSLY_SKIP_PERMISSIONS`: set to `true` to enable Claude `--dangerously-skip-permissions` (default: false)
+- `AIRELAY_OPENCODE_PERMISSION`: JSON string for OpenCode permissions (defaults to deny)
+- `AIRELAY_OPENCODE_ALLOW_ALL`: set to `true` to use OpenCode allow-all permissions (default: false)
 
 ## Config file (optional)
 The bot stores `/agent` in a JSON file at:
-`~/.config/aipal/config.json` (or `$XDG_CONFIG_HOME/aipal/config.json`).
+`~/.config/airelay/config.json` (or `$XDG_CONFIG_HOME/airelay/config.json`).
 
 Example:
 ```json
@@ -104,7 +104,7 @@ See `docs/configuration.md` for details.
 If `soul.md` and/or `memory.md` exist next to `config.json`, their contents are injected into the first prompt of a new conversation (`soul.md` first, then `memory.md`).
 
 Location:
-`~/.config/aipal/soul.md` and `~/.config/aipal/memory.md` (or under `$XDG_CONFIG_HOME/aipal/`).
+`~/.config/airelay/soul.md` and `~/.config/airelay/memory.md` (or under `$XDG_CONFIG_HOME/airelay/`).
 
 ## Security notes
 This bot executes local commands on your machine. Run it only on trusted hardware, keep the bot private, and avoid sharing the token.
@@ -113,7 +113,7 @@ To restrict access, set `ALLOWED_USERS` in `.env` to a comma-separated list of T
 
 Hardening defaults:
 - The bot ignores any update that is not a private chat.
-- The bot refuses to start without `ALLOWED_USERS` unless `AIPAL_ALLOW_OPEN_BOT=true`.
+- The bot refuses to start without `ALLOWED_USERS` unless `AIRELAY_ALLOW_OPEN_BOT=true`.
 
 ## How it works
 - Builds a shell command with a base64-encoded prompt to avoid quoting issues

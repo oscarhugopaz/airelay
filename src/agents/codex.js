@@ -19,7 +19,7 @@ function appendOptionalReasoning(args, value) {
 function buildCommand({ prompt, promptExpression, threadId, model, thinking }) {
   const promptValue = resolvePromptValue(prompt, promptExpression);
   let args = BASE_ARGS;
-  if (String(process.env.AIPAL_CODEX_YOLO || '').toLowerCase() === 'true') {
+  if (String(process.env.AIRELAY_CODEX_YOLO || '').toLowerCase() === 'true') {
     args = `${args} --yolo`;
   }
   args = appendOptionalArg(args, MODEL_ARG, model);

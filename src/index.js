@@ -17,6 +17,7 @@ const {
   normalizeAgent,
 } = require('./agents');
 const {
+  CONFIG_DIR,
   CONFIG_PATH,
   MEMORY_PATH,
   SOUL_PATH,
@@ -92,35 +93,35 @@ if (!BOT_TOKEN) {
 const PARAKEET_CMD = 'parakeet-mlx';
 const PARAKEET_TIMEOUT_MS = 120000;
 
-const IMAGE_DIR = path.resolve(path.join(os.tmpdir(), 'aipal', 'images'));
+const IMAGE_DIR = path.resolve(path.join(os.tmpdir(), 'airelay', 'images'));
 const IMAGE_TTL_HOURS = 24;
 const IMAGE_CLEANUP_INTERVAL_MS = 60 * 60 * 1000;
 
-const DOCUMENT_DIR = path.resolve(path.join(os.tmpdir(), 'aipal', 'documents'));
+const DOCUMENT_DIR = path.resolve(path.join(os.tmpdir(), 'airelay', 'documents'));
 const DOCUMENT_TTL_HOURS = 24;
 const DOCUMENT_CLEANUP_INTERVAL_MS = 60 * 60 * 1000;
 
 const SCRIPTS_DIR =
-  process.env.AIPAL_SCRIPTS_DIR ||
-  path.join(os.homedir(), '.config', 'aipal', 'scripts');
+  process.env.AIRELAY_SCRIPTS_DIR ||
+  path.join(CONFIG_DIR, 'scripts');
 const SCRIPT_TIMEOUT_MS = readNumberEnv(
-  process.env.AIPAL_SCRIPT_TIMEOUT_MS,
+  process.env.AIRELAY_SCRIPT_TIMEOUT_MS,
   120000
 );
 const DOWNLOAD_TIMEOUT_MS = readNumberEnv(
-  process.env.AIPAL_DOWNLOAD_TIMEOUT_MS,
+  process.env.AIRELAY_DOWNLOAD_TIMEOUT_MS,
   60000
 );
 const MAX_DOWNLOAD_BYTES = readNumberEnv(
-  process.env.AIPAL_MAX_DOWNLOAD_BYTES,
+  process.env.AIRELAY_MAX_DOWNLOAD_BYTES,
   25 * 1024 * 1024
 );
 const AGENT_TIMEOUT_MS = readNumberEnv(
-  process.env.AIPAL_AGENT_TIMEOUT_MS,
+  process.env.AIRELAY_AGENT_TIMEOUT_MS,
   600000
 );
 const AGENT_MAX_BUFFER = readNumberEnv(
-  process.env.AIPAL_AGENT_MAX_BUFFER,
+  process.env.AIRELAY_AGENT_MAX_BUFFER,
   10 * 1024 * 1024
 );
 const SCRIPT_NAME_REGEX = /^[A-Za-z0-9_-]+$/;
@@ -134,7 +135,7 @@ bot.use((ctx, next) => {
 });
 
 const allowedUsers = parseAllowedUsersEnv(process.env.ALLOWED_USERS);
-const allowOpenBot = String(process.env.AIPAL_ALLOW_OPEN_BOT || '').toLowerCase() === 'true';
+const allowOpenBot = String(process.env.AIRELAY_ALLOW_OPEN_BOT || '').toLowerCase() === 'true';
 
 // Access control middleware: must be registered before any other handlers
 if (allowedUsers.size > 0) {
@@ -153,7 +154,7 @@ if (allowedUsers.size > 0) {
 } else {
   if (allowOpenBot) {
     console.warn(
-      'WARNING: No ALLOWED_USERS configured. AIPAL_ALLOW_OPEN_BOT=true, so the bot is open to everyone.'
+      'WARNING: No ALLOWED_USERS configured. AIRELAY_ALLOW_OPEN_BOT=true, so the bot is open to everyone.'
     );
   } else {
     console.error('Refusing to start: ALLOWED_USERS is not configured.');
@@ -494,7 +495,7 @@ function createByteLimitTransform(maxBytes, label) {
 
 async function downloadTelegramFile(ctx, payload, options = {}) {
   const {
-    dir = path.join(os.tmpdir(), 'aipal'),
+    dir = path.join(os.tmpdir(), 'airelay'),
     prefix = 'file',
     errorLabel = 'file',
   } = options;

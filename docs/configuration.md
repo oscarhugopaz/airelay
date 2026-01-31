@@ -3,8 +3,8 @@
 This bot stores a minimal JSON config with the values set by `/agent`.
 
 ## Location
-- `~/.config/aipal/config.json`
-- If `XDG_CONFIG_HOME` is set, it uses `$XDG_CONFIG_HOME/aipal/config.json`
+- `~/.config/airelay/config.json`
+- If `XDG_CONFIG_HOME` is set, it uses `$XDG_CONFIG_HOME/airelay/config.json`
 
 ## Schema
 ```json
@@ -26,32 +26,32 @@ If the file is missing, all values are unset and the bot uses defaults.
 
 ## Environment variables
 - `ALLOWED_USERS` (recommended): comma-separated list of Telegram user IDs allowed to use the bot. If unset/empty, the bot refuses to start (safer default).
-- `AIPAL_ALLOW_OPEN_BOT` (optional): set to `true` to allow starting without `ALLOWED_USERS` (NOT recommended).
-- `AIPAL_DOWNLOAD_TIMEOUT_MS` (optional): timeout for Telegram file downloads in ms (default: 60000).
-- `AIPAL_MAX_DOWNLOAD_BYTES` (optional): max Telegram file download size in bytes (default: 26214400).
-- `AIPAL_CODEX_YOLO` / `AIPAL_GEMINI_YOLO` (optional): set to `true` to enable `--yolo` for those CLIs.
-- `AIPAL_CLAUDE_DANGEROUSLY_SKIP_PERMISSIONS` (optional): set to `true` to enable `--dangerously-skip-permissions`.
-- `AIPAL_OPENCODE_PERMISSION` (optional): JSON string with OpenCode permissions (defaults to deny).
-- `AIPAL_OPENCODE_ALLOW_ALL` (optional): set to `true` to force allow-all OpenCode permissions.
+- `AIRELAY_ALLOW_OPEN_BOT` (optional): set to `true` to allow starting without `ALLOWED_USERS` (NOT recommended).
+- `AIRELAY_DOWNLOAD_TIMEOUT_MS` (optional): timeout for Telegram file downloads in ms (default: 60000).
+- `AIRELAY_MAX_DOWNLOAD_BYTES` (optional): max Telegram file download size in bytes (default: 26214400).
+- `AIRELAY_CODEX_YOLO` / `AIRELAY_GEMINI_YOLO` (optional): set to `true` to enable `--yolo` for those CLIs.
+- `AIRELAY_CLAUDE_DANGEROUSLY_SKIP_PERMISSIONS` (optional): set to `true` to enable `--dangerously-skip-permissions`.
+- `AIRELAY_OPENCODE_PERMISSION` (optional): JSON string with OpenCode permissions (defaults to deny).
+- `AIRELAY_OPENCODE_ALLOW_ALL` (optional): set to `true` to force allow-all OpenCode permissions.
 
 ## Memory file (optional)
 If `memory.md` exists alongside `config.json`, its contents are injected into the very first prompt of a new conversation (i.e. when there is no active session/thread).
 
 Location:
-- `~/.config/aipal/memory.md`
-- If `XDG_CONFIG_HOME` is set, it uses `$XDG_CONFIG_HOME/aipal/memory.md`
+- `~/.config/airelay/memory.md`
+- If `XDG_CONFIG_HOME` is set, it uses `$XDG_CONFIG_HOME/airelay/memory.md`
 
 ## Soul file (optional)
 If `soul.md` exists alongside `config.json`, its contents are injected into the very first prompt of a new conversation, before `memory.md`.
 
 Location:
-- `~/.config/aipal/soul.md`
-- If `XDG_CONFIG_HOME` is set, it uses `$XDG_CONFIG_HOME/aipal/soul.md`
+- `~/.config/airelay/soul.md`
+- If `XDG_CONFIG_HOME` is set, it uses `$XDG_CONFIG_HOME/airelay/soul.md`
 
 ## Cron jobs file (optional)
 Cron jobs live in a separate file:
-- `~/.config/aipal/cron.json`
-- If `XDG_CONFIG_HOME` is set, it uses `$XDG_CONFIG_HOME/aipal/cron.json`
+- `~/.config/airelay/cron.json`
+- If `XDG_CONFIG_HOME` is set, it uses `$XDG_CONFIG_HOME/airelay/cron.json`
 
 Schema:
 ```json

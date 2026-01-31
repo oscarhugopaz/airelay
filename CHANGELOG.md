@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.9] - 2026-01-31
+### Changed
+- Rebranded from Aipal to Airelay (AI Relay).
+- Default config paths now live under `~/.config/airelay` (or `$XDG_CONFIG_HOME/airelay`).
+- Environment variable prefix migrated from `AIPAL_*` to `AIRELAY_*`.
+
+### Security
+- Ignore non-private chats by default.
+- Fail-closed startup: the bot refuses to start when `ALLOWED_USERS` is empty, unless `AIRELAY_ALLOW_OPEN_BOT=true`.
+- Harden Telegram downloads with streaming, timeout (`AIRELAY_DOWNLOAD_TIMEOUT_MS`), and max bytes (`AIRELAY_MAX_DOWNLOAD_BYTES`).
+- Make dangerous agent flags opt-in (`AIRELAY_CODEX_YOLO`, `AIRELAY_GEMINI_YOLO`, `AIRELAY_CLAUDE_DANGEROUSLY_SKIP_PERMISSIONS`).
+- OpenCode permissions are safe-by-default (deny) unless explicitly overridden.
+
 ## [0.1.8] - 2026-01-26
 ### Added
 - `ALLOWED_USERS` environment variable to restrict bot access to an allowlist of Telegram user IDs.
@@ -14,14 +27,14 @@ All notable changes to this project will be documented in this file.
 - If an agent exits non-zero but produces usable stdout, the bot returns that output instead of failing hard.
 
 ### Documentation
-- Fixed `AIPAL_SCRIPTS_DIR` default path typo.
+- Fixed `AIRELAY_SCRIPTS_DIR` default path typo.
 - Thanks @JcMinarro for the contributions in this release.
 
 ## [0.1.7] - 2026-01-25
 ### Added
 - Internal cron scheduler for scheduled tasks within the same bot session.
 - `/cron` command to list jobs, reload config, and get chat ID.
-- Cron jobs config in `~/.config/aipal/cron.json`.
+- Cron jobs config in `~/.config/airelay/cron.json`.
 
 ## [0.1.6] - 2026-01-21
 ### Added

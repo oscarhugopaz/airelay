@@ -15,7 +15,7 @@ const {
 } = require('../src/message-utils');
 
 test('extractImageTokens keeps only images inside IMAGE_DIR', () => {
-  const baseDir = path.join(os.tmpdir(), 'aipal-test-images');
+  const baseDir = path.join(os.tmpdir(), 'airelay-test-images');
   const inside = path.join(baseDir, 'img.png');
   const outside = path.join(os.tmpdir(), 'outside.png');
   const text = `hello [[image:${inside}]] [[image:${outside}]] [[image:relative.png]]`;
@@ -28,7 +28,7 @@ test('extractImageTokens keeps only images inside IMAGE_DIR', () => {
 });
 
 test('extractDocumentTokens keeps only documents inside DOCUMENT_DIR', () => {
-  const baseDir = path.join(os.tmpdir(), 'aipal-test-docs');
+  const baseDir = path.join(os.tmpdir(), 'airelay-test-docs');
   const inside = path.join(baseDir, 'guide.pdf');
   const outside = path.join(os.tmpdir(), 'outside.pdf');
   const text = `hello [[document:${inside}]] [[file:${outside}]] [[document:relative.pdf]]`;
@@ -41,13 +41,13 @@ test('extractDocumentTokens keeps only documents inside DOCUMENT_DIR', () => {
 });
 
 test('isPathInside detects containment', () => {
-  const baseDir = path.join(os.tmpdir(), 'aipal-test');
+  const baseDir = path.join(os.tmpdir(), 'airelay-test');
   assert.equal(isPathInside(baseDir, path.join(baseDir, 'file.txt')), true);
   assert.equal(isPathInside(baseDir, path.join(os.tmpdir(), 'other.txt')), false);
 });
 
 test('isPathInside handles symlinked base paths', () => {
-  const baseDir = fs.mkdtempSync(path.join(os.tmpdir(), 'aipal-symlink-'));
+  const baseDir = fs.mkdtempSync(path.join(os.tmpdir(), 'airelay-symlink-'));
   const targetFile = path.join(baseDir, 'file.txt');
   fs.writeFileSync(targetFile, 'ok');
   const linkDir = `${baseDir}-link`;
@@ -70,11 +70,11 @@ test('isPathInside handles symlinked base paths', () => {
 });
 
 test('buildPrompt includes image hints', () => {
-  const baseDir = '/tmp/aipal/images';
-  const docDir = '/tmp/aipal/documents';
+  const baseDir = '/tmp/airelay/images';
+  const docDir = '/tmp/airelay/documents';
   const prompt = buildPrompt(
     'hello',
-    ['/tmp/aipal/images/a.png'],
+    ['/tmp/airelay/images/a.png'],
     baseDir,
     '',
     [],
@@ -86,8 +86,8 @@ test('buildPrompt includes image hints', () => {
 });
 
 test('buildPrompt includes slash context', () => {
-  const baseDir = '/tmp/aipal/images';
-  const docDir = '/tmp/aipal/documents';
+  const baseDir = '/tmp/airelay/images';
+  const docDir = '/tmp/airelay/documents';
   const prompt = buildPrompt('hello', [], baseDir, '/inbox output:\n1) foo', [], docDir);
   assert.match(prompt, /Context from last slash command output/);
   assert.match(prompt, /\/inbox output/);

@@ -4,7 +4,7 @@ const os = require('os');
 const fs = require('fs/promises');
 
 const XDG_CONFIG_HOME = process.env.XDG_CONFIG_HOME || path.join(os.homedir(), '.config');
-const CONFIG_PATH = path.join(XDG_CONFIG_HOME, 'aipal', 'config.json');
+const CONFIG_PATH = path.join(XDG_CONFIG_HOME, 'airelay', 'config.json');
 const CONFIG_DIR = path.dirname(CONFIG_PATH);
 const MEMORY_PATH = path.join(CONFIG_DIR, 'memory.md');
 const SOUL_PATH = path.join(CONFIG_DIR, 'soul.md');

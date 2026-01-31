@@ -5,15 +5,15 @@ Este documento lista acciones de hardening recomendadas para este proyecto. No s
 ## P0 (Crítico) — bloquear antes de exponer
 
 - [ ] **Fail-closed si no hay `ALLOWED_USERS`**
-  - Estado actual: si `ALLOWED_USERS` está vacío, el bot queda abierto (solo loggea un warning).
+  - Estado actual: el bot se niega a arrancar si `ALLOWED_USERS` está vacío (fail-closed).
   - Recomendación: en producción, no arrancar sin `ALLOWED_USERS` salvo que exista un flag explícito de “modo público”.
   - Referencia: [src/index.js](src/index.js#L114-L147)
 
 - [ ] **Revisar/limitar permisos peligrosos en agentes**
-  - `claude`: usa `--dangerously-skip-permissions`.
-  - `codex`: usa `--yolo`.
-  - `opencode`: fuerza `OPENCODE_PERMISSION={"*":"allow"}`.
-  - Recomendación: defaults “safe” + habilitar modo riesgoso solo con env explícita y documentación clara.
+  - `claude`: `--dangerously-skip-permissions` debe ser opt-in.
+  - `codex`: `--yolo` debe ser opt-in.
+  - `opencode`: permisos deben default-deny.
+  - Recomendación: defaults “safe” + habilitar modo riesgoso solo con env explícita y documentación clara (ya implementado; revisar que docs/ops lo reflejen).
   - Referencias:
     - [src/agents/claude.js](src/agents/claude.js#L20-L37)
     - [src/agents/codex.js](src/agents/codex.js#L4-L33)
@@ -27,7 +27,7 @@ Este documento lista acciones de hardening recomendadas para este proyecto. No s
 ## P1 (Alto) — reducir superficie de DoS / abuso
 
 - [ ] **Limitar tamaño de descargas de Telegram**
-  - Estado actual: descarga con `fetch()` + `arrayBuffer()` (carga todo en memoria) y luego `fs.writeFile`.
+  - Estado actual: descarga en streaming a disco con límite de bytes y timeout.
   - Riesgo: DoS por archivos grandes (RAM spike) o descargas lentas.
   - Recomendación: streaming a disco, límite por `Content-Length`/contador de bytes, timeout con `AbortController`.
   - Referencia: [src/index.js](src/index.js#L458-L477)
@@ -39,7 +39,7 @@ Este documento lista acciones de hardening recomendadas para este proyecto. No s
   - Referencia: [src/index.js](src/index.js#L785-L793)
 
 - [ ] **Asegurar timeouts y buffers con valores defensivos**
-  - Estado actual: timeouts existen (`AIPAL_AGENT_TIMEOUT_MS`, `AIPAL_SCRIPT_TIMEOUT_MS`) y `AGENT_MAX_BUFFER`.
+  - Estado actual: timeouts existen (`AIRELAY_AGENT_TIMEOUT_MS`, `AIRELAY_SCRIPT_TIMEOUT_MS`) y `AGENT_MAX_BUFFER`.
   - Recomendación: documentar defaults, poner límites máximos razonables, y diferenciar timeouts para listados (`/model`) vs ejecuciones largas.
   - Referencia: [src/index.js](src/index.js#L100-L117)
 
@@ -81,7 +81,7 @@ Este documento lista acciones de hardening recomendadas para este proyecto. No s
   - Sin acceso a llaves SSH, tokens adicionales, ni carpetas sensibles.
 
 - [ ] **Aislamiento (contenedor/sandbox) y FS restringido**
-  - Permitir solo `~/.config/aipal` y `/tmp/aipal` (y lo estrictamente necesario).
+  - Permitir solo `~/.config/airelay` y `/tmp/airelay` (y lo estrictamente necesario).
 
 - [ ] **Reducir egress si es posible**
   - Especialmente importante si el agente/CLI puede hacer llamadas de red.

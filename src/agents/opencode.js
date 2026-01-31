@@ -6,9 +6,9 @@ const OPENCODE_OUTPUT_FORMAT = 'json';
 const DEFAULT_MODEL = 'opencode/gpt-5-nano';
 
 function getOpenCodePermission() {
-  const raw = String(process.env.AIPAL_OPENCODE_PERMISSION || '').trim();
+  const raw = String(process.env.AIRELAY_OPENCODE_PERMISSION || '').trim();
   if (raw) return raw;
-  if (String(process.env.AIPAL_OPENCODE_ALLOW_ALL || '').toLowerCase() === 'true') {
+  if (String(process.env.AIRELAY_OPENCODE_ALLOW_ALL || '').toLowerCase() === 'true') {
     return '{"*": "allow"}';
   }
   return DEFAULT_OPENCODE_PERMISSION;

@@ -14,14 +14,14 @@ function loadCronScheduler(configHome) {
 }
 
 test('loadCronJobs returns empty list when file is missing', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aipal-cron-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'airelay-cron-'));
   const { loadCronJobs } = loadCronScheduler(dir);
   const jobs = await loadCronJobs();
   assert.deepEqual(jobs, []);
 });
 
 test('saveCronJobs writes and loadCronJobs reads jobs', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aipal-cron-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'airelay-cron-'));
   const { loadCronJobs, saveCronJobs, CRON_PATH } = loadCronScheduler(dir);
 
   const input = [

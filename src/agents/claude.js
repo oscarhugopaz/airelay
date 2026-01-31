@@ -24,7 +24,7 @@ function buildCommand({ prompt, promptExpression, threadId }) {
     CLAUDE_OUTPUT_FORMAT,
   ];
   if (
-    String(process.env.AIPAL_CLAUDE_DANGEROUSLY_SKIP_PERMISSIONS || '').toLowerCase() === 'true'
+    String(process.env.AIRELAY_CLAUDE_DANGEROUSLY_SKIP_PERMISSIONS || '').toLowerCase() === 'true'
   ) {
     args.push('--dangerously-skip-permissions');
   }
