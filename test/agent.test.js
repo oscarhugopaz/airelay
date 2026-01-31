@@ -8,8 +8,23 @@ test('buildAgentCommand uses exec resume with thread id', () => {
   const command = agent.buildCommand({ prompt: 'hello', threadId: 't-123' });
   assert.match(command, /codex exec resume 't-123'/);
   assert.match(command, /--json/);
-  assert.match(command, /--yolo/);
   assert.match(command, /'hello'/);
+});
+
+test('buildAgentCommand includes codex --yolo when enabled', () => {
+  const previous = process.env.AIPAL_CODEX_YOLO;
+  process.env.AIPAL_CODEX_YOLO = 'true';
+  try {
+    const agent = getAgent('codex');
+    const command = agent.buildCommand({ prompt: 'hello' });
+    assert.match(command, /--yolo/);
+  } finally {
+    if (previous == null) {
+      delete process.env.AIPAL_CODEX_YOLO;
+    } else {
+      process.env.AIPAL_CODEX_YOLO = previous;
+    }
+  }
 });
 
 test('buildAgentCommand appends model and reasoning flags', () => {
@@ -41,8 +56,23 @@ test('buildAgentCommand builds claude headless command with resume', () => {
   assert.match(command, /^claude /);
   assert.match(command, /-p 'hello'/);
   assert.match(command, /--output-format json/);
-  assert.match(command, /--dangerously-skip-permissions/);
   assert.match(command, /--resume 'session-1'/);
+});
+
+test('buildAgentCommand includes claude dangerously-skip-permissions when enabled', () => {
+  const previous = process.env.AIPAL_CLAUDE_DANGEROUSLY_SKIP_PERMISSIONS;
+  process.env.AIPAL_CLAUDE_DANGEROUSLY_SKIP_PERMISSIONS = 'true';
+  try {
+    const agent = getAgent('claude');
+    const command = agent.buildCommand({ prompt: 'hello' });
+    assert.match(command, /--dangerously-skip-permissions/);
+  } finally {
+    if (previous == null) {
+      delete process.env.AIPAL_CLAUDE_DANGEROUSLY_SKIP_PERMISSIONS;
+    } else {
+      process.env.AIPAL_CLAUDE_DANGEROUSLY_SKIP_PERMISSIONS = previous;
+    }
+  }
 });
 
 test('parseAgentOutput extracts claude session and result', () => {
@@ -60,8 +90,23 @@ test('buildAgentCommand builds gemini headless command', () => {
   assert.match(command, /^gemini /);
   assert.match(command, /-p 'hello'/);
   assert.match(command, /--output-format json/);
-  assert.match(command, /--yolo/);
   assert.match(command, /--resume session-3/);
+});
+
+test('buildAgentCommand includes gemini --yolo when enabled', () => {
+  const previous = process.env.AIPAL_GEMINI_YOLO;
+  process.env.AIPAL_GEMINI_YOLO = 'true';
+  try {
+    const agent = getAgent('gemini');
+    const command = agent.buildCommand({ prompt: 'hello' });
+    assert.match(command, /--yolo/);
+  } finally {
+    if (previous == null) {
+      delete process.env.AIPAL_GEMINI_YOLO;
+    } else {
+      process.env.AIPAL_GEMINI_YOLO = previous;
+    }
+  }
 });
 
 test('parseAgentOutput extracts gemini response', () => {
@@ -88,13 +133,29 @@ test('parseSessionList extracts latest gemini session id', () => {
 test('buildAgentCommand builds opencode command with env and json flag', () => {
   const agent = getAgent('opencode');
   const command = agent.buildCommand({ prompt: 'hello', threadId: 'sess-123' });
-  assert.match(command, /^OPENCODE_PERMISSION='\{"\*": "allow"\}' opencode run /);
+  assert.match(command, /^OPENCODE_PERMISSION='\{"\*": "deny"\}' opencode run /);
   assert.match(command, /--format json/);
   assert.match(command, /--model 'opencode\/gpt-5-nano'/);
   assert.match(command, /--continue/);
   assert.match(command, /--session 'sess-123'/);
   assert.match(command, /'hello'/);
   assert.match(command, /< \/dev\/null/);
+});
+
+test('buildAgentCommand uses allow-all opencode permission when enabled', () => {
+  const previous = process.env.AIPAL_OPENCODE_ALLOW_ALL;
+  process.env.AIPAL_OPENCODE_ALLOW_ALL = 'true';
+  try {
+    const agent = getAgent('opencode');
+    const command = agent.buildCommand({ prompt: 'hello' });
+    assert.match(command, /^OPENCODE_PERMISSION='\{"\*": "allow"\}' opencode run /);
+  } finally {
+    if (previous == null) {
+      delete process.env.AIPAL_OPENCODE_ALLOW_ALL;
+    } else {
+      process.env.AIPAL_OPENCODE_ALLOW_ALL = previous;
+    }
+  }
 });
 
 test('parseAgentOutput extracts opencode ndjson result', () => {

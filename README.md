@@ -1,8 +1,7 @@
 # Aipal: Telegram Codex Bot
 
-![CI](https://github.com/antoniolg/aipal/actions/workflows/ci.yml/badge.svg?branch=main)
+![CI](https://github.com/oscarhugopaz/airelay/actions/workflows/ci.yml/badge.svg?branch=main)
 
-![Aipal](docs/assets/aipal.jpg)
 
 Minimal Telegram bot that forwards messages to a local CLI agent (Codex by default). Each message is executed locally and the output is sent back to the chat.
 
@@ -20,8 +19,8 @@ Minimal Telegram bot that forwards messages to a local CLI agent (Codex by defau
 
 ## Quick start
 ```bash
-git clone https://github.com/antoniolg/aipal.git
-cd aipal
+git clone https://github.com/oscarhugopaz/airelay.git
+cd airelay
 npm install
 cp .env.example .env
 ```
@@ -77,7 +76,15 @@ The only required environment variable is `TELEGRAM_BOT_TOKEN` in `.env`.
 Optional:
 - `AIPAL_SCRIPTS_DIR`: directory for slash scripts (default: `~/.config/aipal/scripts`)
 - `AIPAL_SCRIPT_TIMEOUT_MS`: timeout for slash scripts (default: 120000)
-- `ALLOWED_USERS`: comma-separated list of Telegram user IDs allowed to interact with the bot (if unset/empty, bot is open to everyone)
+- `ALLOWED_USERS`: comma-separated list of Telegram user IDs allowed to interact with the bot (if unset/empty, the bot refuses to start)
+- `AIPAL_ALLOW_OPEN_BOT`: set to `true` to allow starting without `ALLOWED_USERS` (NOT recommended)
+- `AIPAL_DOWNLOAD_TIMEOUT_MS`: timeout for Telegram file downloads (default: 60000)
+- `AIPAL_MAX_DOWNLOAD_BYTES`: max size for Telegram file downloads in bytes (default: 26214400)
+- `AIPAL_CODEX_YOLO`: set to `true` to enable Codex `--yolo` (default: false)
+- `AIPAL_GEMINI_YOLO`: set to `true` to enable Gemini `--yolo` (default: false)
+- `AIPAL_CLAUDE_DANGEROUSLY_SKIP_PERMISSIONS`: set to `true` to enable Claude `--dangerously-skip-permissions` (default: false)
+- `AIPAL_OPENCODE_PERMISSION`: JSON string for OpenCode permissions (defaults to deny)
+- `AIPAL_OPENCODE_ALLOW_ALL`: set to `true` to use OpenCode allow-all permissions (default: false)
 
 ## Config file (optional)
 The bot stores `/agent` in a JSON file at:
@@ -103,6 +110,10 @@ Location:
 This bot executes local commands on your machine. Run it only on trusted hardware, keep the bot private, and avoid sharing the token.
 
 To restrict access, set `ALLOWED_USERS` in `.env` to a comma-separated list of Telegram user IDs. Unauthorized users are ignored (no reply).
+
+Hardening defaults:
+- The bot ignores any update that is not a private chat.
+- The bot refuses to start without `ALLOWED_USERS` unless `AIPAL_ALLOW_OPEN_BOT=true`.
 
 ## How it works
 - Builds a shell command with a base64-encoded prompt to avoid quoting issues

@@ -22,8 +22,12 @@ function buildCommand({ prompt, promptExpression, threadId }) {
     promptValue,
     '--output-format',
     CLAUDE_OUTPUT_FORMAT,
-    '--dangerously-skip-permissions',
   ];
+  if (
+    String(process.env.AIPAL_CLAUDE_DANGEROUSLY_SKIP_PERMISSIONS || '').toLowerCase() === 'true'
+  ) {
+    args.push('--dangerously-skip-permissions');
+  }
   if (threadId) {
     args.push('--resume', shellQuote(threadId));
   }

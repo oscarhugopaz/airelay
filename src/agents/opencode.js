@@ -1,9 +1,18 @@
 const { shellQuote, resolvePromptValue } = require('./utils');
 
 const OPENCODE_CMD = 'opencode';
-const OPENCODE_PERMISSION = '{"*": "allow"}';
+const DEFAULT_OPENCODE_PERMISSION = '{"*": "deny"}';
 const OPENCODE_OUTPUT_FORMAT = 'json';
 const DEFAULT_MODEL = 'opencode/gpt-5-nano';
+
+function getOpenCodePermission() {
+  const raw = String(process.env.AIPAL_OPENCODE_PERMISSION || '').trim();
+  if (raw) return raw;
+  if (String(process.env.AIPAL_OPENCODE_ALLOW_ALL || '').toLowerCase() === 'true') {
+    return '{"*": "allow"}';
+  }
+  return DEFAULT_OPENCODE_PERMISSION;
+}
 
 function safeJsonParse(value) {
   try {
@@ -30,8 +39,10 @@ function buildCommand({ prompt, promptExpression, threadId, model }) {
 
   const command = `${OPENCODE_CMD} ${args.join(' ')}`.trim();
 
+  const permission = getOpenCodePermission();
+
   // Prepend permission env and append input redirection
-  return `OPENCODE_PERMISSION=${shellQuote(OPENCODE_PERMISSION)} ${command} < /dev/null`;
+  return `OPENCODE_PERMISSION=${shellQuote(permission)} ${command} < /dev/null`;
 }
 
 function parseOutput(output) {
@@ -76,7 +87,8 @@ function parseOutput(output) {
 
 function listModelsCommand() {
   // Prepend permission env and append input redirection
-  return `OPENCODE_PERMISSION=${shellQuote(OPENCODE_PERMISSION)} ${OPENCODE_CMD} models < /dev/null`;
+  const permission = getOpenCodePermission();
+  return `OPENCODE_PERMISSION=${shellQuote(permission)} ${OPENCODE_CMD} models < /dev/null`;
 }
 
 function parseModelList(output) {

@@ -3,10 +3,12 @@ require('dotenv').config();
 const { Telegraf } = require('telegraf');
 const { execFile } = require('child_process');
 const { randomUUID } = require('crypto');
-const { constants: fsConstants } = require('fs');
+const { constants: fsConstants, createWriteStream } = require('fs');
 const fs = require('fs/promises');
 const os = require('os');
 const path = require('path');
+const { Readable, Transform } = require('stream');
+const { pipeline } = require('stream/promises');
 const {
   AGENT_CODEX,
   getAgent,
@@ -105,6 +107,14 @@ const SCRIPT_TIMEOUT_MS = readNumberEnv(
   process.env.AIPAL_SCRIPT_TIMEOUT_MS,
   120000
 );
+const DOWNLOAD_TIMEOUT_MS = readNumberEnv(
+  process.env.AIPAL_DOWNLOAD_TIMEOUT_MS,
+  60000
+);
+const MAX_DOWNLOAD_BYTES = readNumberEnv(
+  process.env.AIPAL_MAX_DOWNLOAD_BYTES,
+  25 * 1024 * 1024
+);
 const AGENT_TIMEOUT_MS = readNumberEnv(
   process.env.AIPAL_AGENT_TIMEOUT_MS,
   600000
@@ -116,7 +126,15 @@ const AGENT_MAX_BUFFER = readNumberEnv(
 const SCRIPT_NAME_REGEX = /^[A-Za-z0-9_-]+$/;
 
 const bot = new Telegraf(BOT_TOKEN);
+
+// Hardening: silently ignore anything that isn't a private chat
+bot.use((ctx, next) => {
+  if (ctx?.chat?.type !== 'private') return;
+  return next();
+});
+
 const allowedUsers = parseAllowedUsersEnv(process.env.ALLOWED_USERS);
+const allowOpenBot = String(process.env.AIPAL_ALLOW_OPEN_BOT || '').toLowerCase() === 'true';
 
 // Access control middleware: must be registered before any other handlers
 if (allowedUsers.size > 0) {
@@ -133,9 +151,14 @@ if (allowedUsers.size > 0) {
     })
   );
 } else {
-  console.warn(
-    'WARNING: No ALLOWED_USERS configured. The bot is open to everyone.'
-  );
+  if (allowOpenBot) {
+    console.warn(
+      'WARNING: No ALLOWED_USERS configured. AIPAL_ALLOW_OPEN_BOT=true, so the bot is open to everyone.'
+    );
+  } else {
+    console.error('Refusing to start: ALLOWED_USERS is not configured.');
+    process.exit(1);
+  }
 }
 
 const queues = new Map();
@@ -455,6 +478,20 @@ function startTyping(ctx) {
   return () => clearInterval(timer);
 }
 
+function createByteLimitTransform(maxBytes, label) {
+  let total = 0;
+  return new Transform({
+    transform(chunk, _enc, cb) {
+      total += chunk.length;
+      if (total > maxBytes) {
+        cb(new Error(`Downloaded ${label} exceeds ${maxBytes} bytes`));
+        return;
+      }
+      cb(null, chunk);
+    },
+  });
+}
+
 async function downloadTelegramFile(ctx, payload, options = {}) {
   const {
     dir = path.join(os.tmpdir(), 'aipal'),
@@ -463,17 +500,56 @@ async function downloadTelegramFile(ctx, payload, options = {}) {
   } = options;
   const link = await ctx.telegram.getFileLink(payload.fileId);
   const url = typeof link === 'string' ? link : link.href;
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Failed to download ${errorLabel} (${response.status})`);
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), DOWNLOAD_TIMEOUT_MS);
+  let filePath = '';
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    if (!response.ok) {
+      throw new Error(`Failed to download ${errorLabel} (${response.status})`);
+    }
+
+    const contentLengthRaw = response.headers.get('content-length');
+    const contentLength = contentLengthRaw ? Number(contentLengthRaw) : Number.NaN;
+    if (Number.isFinite(contentLength) && contentLength > MAX_DOWNLOAD_BYTES) {
+      throw new Error(
+        `Refusing to download ${errorLabel}: content-length ${contentLength} exceeds limit ${MAX_DOWNLOAD_BYTES}`
+      );
+    }
+
+    await fs.mkdir(dir, { recursive: true });
+    const extFromName = payload.fileName ? path.extname(payload.fileName) : '';
+    const ext =
+      extFromName ||
+      extensionFromMime(payload.mimeType) ||
+      extensionFromUrl(url) ||
+      '.bin';
+    filePath = path.join(dir, `${prefix}-${randomUUID()}${ext}`);
+
+    if (!response.body) {
+      throw new Error(`Failed to download ${errorLabel}: empty response body`);
+    }
+
+    const limiter = createByteLimitTransform(MAX_DOWNLOAD_BYTES, errorLabel);
+    const nodeStream = Readable.fromWeb(response.body);
+    await pipeline(
+      nodeStream,
+      limiter,
+      createWriteStream(filePath, { flags: 'wx', mode: 0o600 })
+    );
+
+    return filePath;
+  } catch (err) {
+    if (filePath) {
+      try {
+        await fs.unlink(filePath);
+      } catch {}
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeout);
   }
-  const buffer = Buffer.from(await response.arrayBuffer());
-  await fs.mkdir(dir, { recursive: true });
-  const extFromName = payload.fileName ? path.extname(payload.fileName) : '';
-  const ext = extFromName || extensionFromMime(payload.mimeType) || extensionFromUrl(url) || '.bin';
-  const filePath = path.join(dir, `${prefix}-${randomUUID()}${ext}`);
-  await fs.writeFile(filePath, buffer);
-  return filePath;
 }
 
 async function transcribeWithParakeet(audioPath) {

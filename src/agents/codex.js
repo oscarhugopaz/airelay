@@ -1,7 +1,7 @@
 const { shellQuote, resolvePromptValue } = require('./utils');
 
 const CODEX_CMD = 'codex';
-const BASE_ARGS = '--json --skip-git-repo-check --yolo';
+const BASE_ARGS = '--json --skip-git-repo-check';
 const MODEL_ARG = '--model';
 const REASONING_CONFIG_KEY = 'model_reasoning_effort';
 
@@ -19,6 +19,9 @@ function appendOptionalReasoning(args, value) {
 function buildCommand({ prompt, promptExpression, threadId, model, thinking }) {
   const promptValue = resolvePromptValue(prompt, promptExpression);
   let args = BASE_ARGS;
+  if (String(process.env.AIPAL_CODEX_YOLO || '').toLowerCase() === 'true') {
+    args = `${args} --yolo`;
+  }
   args = appendOptionalArg(args, MODEL_ARG, model);
   args = appendOptionalReasoning(args, thinking);
   if (threadId) {
