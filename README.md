@@ -138,5 +138,71 @@ Hardening defaults:
 - `Error processing response.`: check that `codex` is installed and accessible on PATH.
 - Telegram `ECONNRESET`: usually transient network, retry.
 
+## Keep it running after closing the terminal (pm2)
+When you run `npm start`, the Node process is attached to your terminal session. If you close the terminal, macOS ends that session and the bot exits.
+
+### Process manager: pm2
+`pm2` keeps the process alive, restarts on crash, and can auto-start on reboot.
+
+```bash
+npm install -g pm2
+cd /path/to/airelay
+pm2 start npm --name airelay -- start
+```
+
+Check status:
+
+```bash
+pm2 list
+pm2 status airelay
+```
+
+View logs:
+
+```bash
+pm2 logs airelay
+```
+
+Auto-start on login/reboot:
+
+```bash
+pm2 startup
+# (pm2 prints a command — run it exactly as shown)
+pm2 save
+```
+
+Restart / reload:
+
+```bash
+pm2 restart airelay
+```
+
+Update after a `git pull` / dependency changes:
+
+```bash
+cd /path/to/airelay
+npm install
+pm2 restart airelay
+```
+
+If your machine rebooted and you want to restore the last saved process list:
+
+```bash
+pm2 resurrect
+```
+
+Stop/remove:
+
+```bash
+pm2 stop airelay
+pm2 delete airelay
+```
+
+Remove pm2 completely:
+
+```bash
+npm uninstall -g pm2
+```
+
 ## License
 MIT. See `LICENSE`.
