@@ -64,6 +64,9 @@ Cron jobs are loaded from `~/.config/airelay/cron.json` (or `$XDG_CONFIG_HOME/ai
 
 - `/cron chatid`: prints your chat ID (use this value as `cronChatId`).
 - `/cron list`: lists configured jobs.
+- `/cron add <id> <cron> [timezone] <prompt>`: creates a new job and reloads the scheduler.
+- `/cron remove <id>`: removes a job and reloads the scheduler.
+- `/cron enable <id>` / `/cron disable <id>`: toggles a job and reloads the scheduler.
 - `/cron reload`: reloads `cron.json` without restarting the bot.
 
 ### Images in responses

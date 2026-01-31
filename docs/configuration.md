@@ -70,3 +70,5 @@ Schema:
 Notes:
 - Jobs are only scheduled when `cronChatId` is set in `config.json`.
 - Use `/cron reload` after editing `cron.json` to apply changes without restarting the bot.
+
+You can also create and manage jobs from chat via `/cron add`, `/cron remove`, `/cron enable`, and `/cron disable`.

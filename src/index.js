@@ -1,6 +1,7 @@
 require('dotenv').config();
 
 const { Telegraf } = require('telegraf');
+const cron = require('node-cron');
 const { execFile } = require('child_process');
 const { randomUUID } = require('crypto');
 const { constants: fsConstants, createWriteStream } = require('fs');
@@ -30,6 +31,7 @@ const {
 } = require('./config-store');
 const {
   loadCronJobs,
+  saveCronJobs,
   startCronScheduler,
 } = require('./cron-scheduler');
 const {
@@ -411,6 +413,42 @@ function splitArgs(input) {
   }
   if (current) args.push(current);
   return args;
+}
+
+const CRON_JOB_ID_REGEX = /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$/;
+
+function isLikelyTimezone(value) {
+  if (!value) return false;
+  const v = String(value).trim();
+  if (!v) return false;
+  if (v.toUpperCase() === 'UTC') return true;
+  return v.includes('/');
+}
+
+function parseCronExpressionFromArgs(args) {
+  if (!Array.isArray(args) || args.length === 0) {
+    return { cron: null, consumed: 0 };
+  }
+  const first = String(args[0] ?? '').trim();
+  if (first.includes(' ')) {
+    const fields = first.split(/\s+/).filter(Boolean);
+    if (fields.length === 5) {
+      return { cron: fields.join(' '), consumed: 1 };
+    }
+  }
+  if (args.length >= 5) {
+    return { cron: args.slice(0, 5).join(' '), consumed: 5 };
+  }
+  return { cron: null, consumed: 0 };
+}
+
+async function saveJobsAndReload(jobs) {
+  await saveCronJobs(jobs);
+  if (!cronScheduler) {
+    return { reloaded: false, scheduled: 0 };
+  }
+  const scheduled = await cronScheduler.reload();
+  return { reloaded: true, scheduled };
 }
 
 async function runScriptCommand(commandName, rawArgs) {
@@ -964,7 +1002,7 @@ bot.command('model', async (ctx) => {
 
 bot.command('cron', async (ctx) => {
   const value = extractCommandValue(ctx.message.text);
-  const parts = value ? value.split(/\s+/) : [];
+  const parts = value ? splitArgs(value) : [];
   const subcommand = parts[0]?.toLowerCase();
 
   if (!subcommand || subcommand === 'list') {
@@ -995,12 +1033,119 @@ bot.command('cron', async (ctx) => {
     return;
   }
 
+  if (subcommand === 'add') {
+    const id = parts[1];
+    if (!id || !CRON_JOB_ID_REGEX.test(id)) {
+      await ctx.reply(
+        'Usage: /cron add <id> <cron> [timezone] <prompt>\n\n' +
+          'Examples:\n' +
+          '/cron add daily-summary 0 9 * * * Europe/Madrid Dame un resumen del día.\n' +
+          '/cron add "daily-summary" "0 9 * * *" "Europe/Madrid" "Dame un resumen del día."'
+      );
+      return;
+    }
+
+    const rest = parts.slice(2);
+    const parsedCron = parseCronExpressionFromArgs(rest);
+    if (!parsedCron.cron) {
+      await ctx.reply('Missing cron expression. Example: /cron add daily-summary 0 9 * * * Europe/Madrid <prompt>');
+      return;
+    }
+    if (!cron.validate(parsedCron.cron)) {
+      await ctx.reply(`Invalid cron expression: ${parsedCron.cron}`);
+      return;
+    }
+
+    let cursor = parsedCron.consumed;
+    const timezoneCandidate = rest[cursor];
+    let timezone;
+    if (isLikelyTimezone(timezoneCandidate)) {
+      timezone = timezoneCandidate;
+      cursor += 1;
+    }
+    const prompt = rest.slice(cursor).join(' ').trim();
+    if (!prompt) {
+      await ctx.reply('Missing prompt text. Example: /cron add daily-summary 0 9 * * * Europe/Madrid <prompt>');
+      return;
+    }
+
+    try {
+      const jobs = await loadCronJobs();
+      if (jobs.some((j) => j.id === id)) {
+        await ctx.reply(`Cron job id already exists: ${id}`);
+        return;
+      }
+      const newJob = {
+        id,
+        enabled: true,
+        cron: parsedCron.cron,
+        prompt,
+        ...(timezone ? { timezone } : {}),
+      };
+      jobs.push(newJob);
+      const result = await saveJobsAndReload(jobs);
+      const extra = result.reloaded
+        ? ` ${result.scheduled} job(s) scheduled.`
+        : ' (scheduler not running; set cronChatId and restart)';
+      await ctx.reply(`Cron job added: ${id} (${parsedCron.cron})${extra}`);
+    } catch (err) {
+      await replyWithError(ctx, 'Failed to add cron job.', err);
+    }
+    return;
+  }
+
+  if (subcommand === 'remove' || subcommand === 'rm') {
+    const id = parts[1];
+    if (!id) {
+      await ctx.reply('Usage: /cron remove <id>');
+      return;
+    }
+    try {
+      const jobs = await loadCronJobs();
+      const next = jobs.filter((j) => j.id !== id);
+      if (next.length === jobs.length) {
+        await ctx.reply(`Cron job not found: ${id}`);
+        return;
+      }
+      const result = await saveJobsAndReload(next);
+      const extra = result.reloaded ? ` ${result.scheduled} job(s) scheduled.` : '';
+      await ctx.reply(`Cron job removed: ${id}.${extra}`);
+    } catch (err) {
+      await replyWithError(ctx, 'Failed to remove cron job.', err);
+    }
+    return;
+  }
+
+  if (subcommand === 'enable' || subcommand === 'disable') {
+    const id = parts[1];
+    if (!id) {
+      await ctx.reply(`Usage: /cron ${subcommand} <id>`);
+      return;
+    }
+    try {
+      const jobs = await loadCronJobs();
+      const job = jobs.find((j) => j.id === id);
+      if (!job) {
+        await ctx.reply(`Cron job not found: ${id}`);
+        return;
+      }
+      job.enabled = subcommand === 'enable';
+      const result = await saveJobsAndReload(jobs);
+      const status = job.enabled ? 'enabled' : 'disabled';
+      const extra = result.reloaded ? ` ${result.scheduled} job(s) scheduled.` : '';
+      await ctx.reply(`Cron job ${status}: ${id}.${extra}`);
+    } catch (err) {
+      await replyWithError(ctx, 'Failed to update cron job.', err);
+    }
+    return;
+  }
+
   if (subcommand === 'chatid') {
     await ctx.reply(`Your chat ID: ${ctx.chat.id}`);
     return;
   }
 
-  await ctx.reply('Usage: /cron [list|reload|chatid]');
+  await ctx.reply('Usage: /cron [list|reload|chatid|add|remove|enable|disable]');
 });
 
 bot.on('text', (ctx) => {
