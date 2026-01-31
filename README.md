@@ -33,6 +33,16 @@ cp .env.example .env
 npm start
 ```
 
+If you're running a newer Node version and want to silence deprecation warnings:
+
+```bash
+# Silence only the punycode DEP0040 warning
+npm run start:no-punycode-warning
+
+# Silence all deprecation warnings
+npm run start:quiet
+```
+
 Open Telegram, send `/start`, then any message.
 
 ## Usage (Telegram)

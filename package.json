@@ -10,6 +10,8 @@
     "dev": "node --watch src/index.js",
     "lint": "biome lint .",
     "start": "node src/index.js",
+    "start:no-punycode-warning": "NODE_OPTIONS=--disable-warning=DEP0040 node src/index.js",
+    "start:quiet": "NODE_OPTIONS=--no-deprecation node src/index.js",
     "test": "node --test"
   },
   "dependencies": {
