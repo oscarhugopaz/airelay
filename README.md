@@ -1,4 +1,4 @@
-# Airelay: Telegram CLI Bot
+# AI Relay: Telegram CLI Bot
 
 ![CI](https://github.com/oscarhugopaz/airelay/actions/workflows/ci.yml/badge.svg?branch=main)
 
