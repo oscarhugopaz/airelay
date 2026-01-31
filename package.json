@@ -1,6 +1,6 @@
 {
   "name": "airelay",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "private": true,
   "description": "Telegram bot that forwards messages to a local CLI agent (Codex by default).",
   "main": "src/index.js",

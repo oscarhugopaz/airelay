@@ -14,7 +14,7 @@ Minimal Telegram bot that forwards messages to a local CLI agent (Codex by defau
 
 ## Requirements
 - Node.js 18+
-- Agent CLI on PATH (default: `codex`, or `claude` / `gemini` / `opencode` when configured)
+- Agent CLI on PATH (default: `codex`, or `opencode` when configured)
 - Audio (optional): `parakeet-mlx` + `ffmpeg`
 
 ## Quick start
@@ -42,7 +42,7 @@ Open Telegram, send `/start`, then any message.
 - Documents: send a file (caption becomes the prompt)
 - `/reset`: clear the chat session (drops the stored session id)
 - `/thinking <level>`: set reasoning effort (mapped to `model_reasoning_effort`) for this session
-- `/agent <codex|claude|gemini|opencode>`: set the CLI agent (persisted in `config.json`)
+- `/agent <codex|opencode>`: set the CLI agent (persisted in `config.json`)
 - `/model [model_id]`: view/set the model for the current agent (persisted in `config.json`)
 - `/cron [list|reload|chatid]`: manage cron jobs (see below)
 - `/help`: list available commands and scripts
@@ -81,8 +81,6 @@ Optional:
 - `AIRELAY_DOWNLOAD_TIMEOUT_MS`: timeout for Telegram file downloads (default: 60000)
 - `AIRELAY_MAX_DOWNLOAD_BYTES`: max size for Telegram file downloads in bytes (default: 26214400)
 - `AIRELAY_CODEX_YOLO`: set to `true` to enable Codex `--yolo` (default: false)
-- `AIRELAY_GEMINI_YOLO`: set to `true` to enable Gemini `--yolo` (default: false)
-- `AIRELAY_CLAUDE_DANGEROUSLY_SKIP_PERMISSIONS`: set to `true` to enable Claude `--dangerously-skip-permissions` (default: false)
 - `AIRELAY_OPENCODE_PERMISSION`: JSON string for OpenCode permissions (defaults to deny)
 - `AIRELAY_OPENCODE_ALLOW_ALL`: set to `true` to use OpenCode allow-all permissions (default: false)
 

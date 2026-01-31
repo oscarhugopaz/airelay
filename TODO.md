@@ -10,12 +10,10 @@ Este documento lista acciones de hardening recomendadas para este proyecto. No s
   - Referencia: [src/index.js](src/index.js#L114-L147)
 
 - [ ] **Revisar/limitar permisos peligrosos en agentes**
-  - `claude`: `--dangerously-skip-permissions` debe ser opt-in.
   - `codex`: `--yolo` debe ser opt-in.
   - `opencode`: permisos deben default-deny.
   - Recomendación: defaults “safe” + habilitar modo riesgoso solo con env explícita y documentación clara (ya implementado; revisar que docs/ops lo reflejen).
   - Referencias:
-    - [src/agents/claude.js](src/agents/claude.js#L20-L37)
     - [src/agents/codex.js](src/agents/codex.js#L4-L33)
     - [src/agents/opencode.js](src/agents/opencode.js#L3-L35)
 

@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.10] - 2026-01-31
+### Removed
+- Dropped unused agent integrations (only `codex` and `opencode` remain).
+
 ## [0.1.9] - 2026-01-31
 ### Changed
 - Rebranded from Aipal to Airelay (AI Relay).
@@ -12,7 +16,7 @@ All notable changes to this project will be documented in this file.
 - Ignore non-private chats by default.
 - Fail-closed startup: the bot refuses to start when `ALLOWED_USERS` is empty, unless `AIRELAY_ALLOW_OPEN_BOT=true`.
 - Harden Telegram downloads with streaming, timeout (`AIRELAY_DOWNLOAD_TIMEOUT_MS`), and max bytes (`AIRELAY_MAX_DOWNLOAD_BYTES`).
-- Make dangerous agent flags opt-in (`AIRELAY_CODEX_YOLO`, `AIRELAY_GEMINI_YOLO`, `AIRELAY_CLAUDE_DANGEROUSLY_SKIP_PERMISSIONS`).
+- Make dangerous agent flags opt-in (`AIRELAY_CODEX_YOLO`).
 - OpenCode permissions are safe-by-default (deny) unless explicitly overridden.
 
 ## [0.1.8] - 2026-01-26
@@ -38,15 +42,15 @@ All notable changes to this project will be documented in this file.
 
 ## [0.1.6] - 2026-01-21
 ### Added
-- Gemini sessions are resumed by looking up the latest `gemini --list-sessions` entry.
+- Agent session resume improvements.
 
 ## [0.1.5] - 2026-01-20
 ### Added
-- Agent registry with adapters for Codex, Claude (headless), and Gemini.
+- Agent registry with adapters for multiple CLIs.
 
 ### Changed
-- Claude runs in headless mode with a PTY wrapper to avoid hangs.
-- Gemini runs in headless JSON mode with YOLO auto-approval.
+- Headless mode improvements to avoid hangs.
+- Headless JSON mode improvements.
 - `/model` support removed; model is no longer passed between CLIs.
 
 ## [0.1.4] - 2026-01-20

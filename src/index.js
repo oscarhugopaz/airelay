@@ -55,7 +55,6 @@ const {
 } = require('./access-control');
 
 const { ScriptManager } = require('./script-manager');
-const { prefixTextWithTimestamp, DEFAULT_TIME_ZONE } = require('./time-utils');
 
 function formatLogTimestamp(date = new Date()) {
   const pad = (value) => String(value).padStart(2, '0');
@@ -176,7 +175,7 @@ const scriptManager = new ScriptManager(SCRIPTS_DIR);
 bot.command('help', async (ctx) => {
   const builtIn = [
     '/start - Hello world',
-    '/agent <name> - Switch agent (codex, claude, gemini, opencode)',
+    '/agent <name> - Switch agent (codex, opencode)',
     '/thinking <level> - Set reasoning effort',
     '/model [model_id] - View/set model for current agent',
     '/reset - Reset session',
@@ -627,10 +626,7 @@ function startDocumentCleanup() {
 async function runAgentOneShot(prompt) {
   const agent = getAgent(globalAgent);
   const thinking = globalThinking;
-  let promptText = String(prompt || '');
-  if (agent.id === 'claude') {
-    promptText = prefixTextWithTimestamp(promptText, { timeZone: DEFAULT_TIME_ZONE });
-  }
+  const promptText = String(prompt || '');
   const promptBase64 = Buffer.from(promptText, 'utf8').toString('base64');
   const promptExpression = '"$PROMPT"';
   const agentCmd = agent.buildCommand({
@@ -692,11 +688,6 @@ async function runAgentForChat(chatId, prompt, options = {}) {
   const threadId = threads.get(threadKey);
   const agent = getAgent(globalAgent);
   let promptWithContext = prompt;
-  if (agent.id === 'claude') {
-    promptWithContext = prefixTextWithTimestamp(promptWithContext, {
-      timeZone: DEFAULT_TIME_ZONE,
-    });
-  }
   if (!threadId) {
     const bootstrap = await buildBootstrapContext();
     promptWithContext = promptWithContext
@@ -893,11 +884,11 @@ bot.command('thinking', async (ctx) => {
 bot.command('agent', async (ctx) => {
   const value = extractCommandValue(ctx.message.text);
   if (!value) {
-    ctx.reply(`Current agent: ${getAgentLabel(globalAgent)}. Use /agent codex|claude|gemini|opencode.`);
+    ctx.reply(`Current agent: ${getAgentLabel(globalAgent)}. Use /agent codex|opencode.`);
     return;
   }
   if (!isKnownAgent(value)) {
-    ctx.reply('Unknown agent. Use /agent codex|claude|gemini|opencode.');
+    ctx.reply('Unknown agent. Use /agent codex|opencode.');
     return;
   }
   const normalized = normalizeAgent(value);

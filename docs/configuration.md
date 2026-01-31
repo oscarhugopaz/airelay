@@ -18,7 +18,7 @@ This bot stores a minimal JSON config with the values set by `/agent`.
 ```
 
 ## Fields
-- `agent`: which CLI to run (`codex`, `claude`, `gemini`, or `opencode`).
+- `agent`: which CLI to run (`codex` or `opencode`).
 - `models` (optional): a map of agent id → model id, set via `/model`.
 - `cronChatId` (optional): Telegram chat id used for cron job messages. You can get it from `/cron chatid`.
 
@@ -29,8 +29,7 @@ If the file is missing, all values are unset and the bot uses defaults.
 - `AIRELAY_ALLOW_OPEN_BOT` (optional): set to `true` to allow starting without `ALLOWED_USERS` (NOT recommended).
 - `AIRELAY_DOWNLOAD_TIMEOUT_MS` (optional): timeout for Telegram file downloads in ms (default: 60000).
 - `AIRELAY_MAX_DOWNLOAD_BYTES` (optional): max Telegram file download size in bytes (default: 26214400).
-- `AIRELAY_CODEX_YOLO` / `AIRELAY_GEMINI_YOLO` (optional): set to `true` to enable `--yolo` for those CLIs.
-- `AIRELAY_CLAUDE_DANGEROUSLY_SKIP_PERMISSIONS` (optional): set to `true` to enable `--dangerously-skip-permissions`.
+- `AIRELAY_CODEX_YOLO` (optional): set to `true` to enable Codex `--yolo`.
 - `AIRELAY_OPENCODE_PERMISSION` (optional): JSON string with OpenCode permissions (defaults to deny).
 - `AIRELAY_OPENCODE_ALLOW_ALL` (optional): set to `true` to force allow-all OpenCode permissions.
 
