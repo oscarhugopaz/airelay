@@ -306,7 +306,15 @@ function readNumberEnv(raw, fallback) {
 }
 
 function getThreadKey(chatId) {
-  return String(chatId);
+  const id = String(chatId);
+  const agent = String(arguments[1] || '').trim().toLowerCase();
+  const model = String(arguments[2] || '').trim();
+  return `${id}:${agent}:${model}`;
+}
+
+function isSessionNotFoundError(err) {
+  const message = [err?.message, err?.stderr, err?.stdout].filter(Boolean).join('\n');
+  return /session not found/i.test(message);
 }
 
 function persistThreads() {
@@ -726,108 +734,130 @@ async function runAgentOneShot(prompt) {
 }
 
 async function runAgentForChat(chatId, prompt, options = {}) {
-  const threadKey = getThreadKey(chatId);
-  const threadId = threads.get(threadKey);
   const agent = getAgent(globalAgent);
-  let promptWithContext = prompt;
-  if (!threadId) {
-    const bootstrap = await buildBootstrapContext();
-    promptWithContext = promptWithContext
-      ? `${bootstrap}\n\n${promptWithContext}`
-      : bootstrap;
-  }
+  const modelForThreadKey = globalModels[globalAgent] || agent.defaultModel || '';
+  const threadKey = getThreadKey(chatId, globalAgent, modelForThreadKey);
+  let threadId = threads.get(threadKey);
   const thinking = globalThinking;
-  const finalPrompt = buildPrompt(
-    promptWithContext,
-    options.imagePaths || [],
-    IMAGE_DIR,
-    options.scriptContext,
-    options.documentPaths || [],
-    DOCUMENT_DIR
-  );
-  const promptBase64 = Buffer.from(finalPrompt, 'utf8').toString('base64');
-  const promptExpression = '"$PROMPT"';
-  const agentCmd = agent.buildCommand({
-    prompt: finalPrompt,
-    promptExpression,
-    threadId,
-    thinking,
-    model: globalModels[globalAgent],
-  });
-  const command = [
-    `PROMPT_B64=${shellQuote(promptBase64)};`,
-    'PROMPT=$(printf %s "$PROMPT_B64" | base64 --decode);',
-    `${agentCmd}`,
-  ].join(' ');
-  let commandToRun = command;
-  if (agent.needsPty) {
-    commandToRun = wrapCommandWithPty(commandToRun);
-  }
-  if (agent.mergeStderr) {
-    commandToRun = `${commandToRun} 2>&1`;
-  }
 
-  const startedAt = Date.now();
-  console.info(`Agent start chat=${chatId} thread=${threadId || 'new'}`);
-  let output;
-  let execError;
-  try {
-    output = await execLocal('bash', ['-lc', commandToRun], {
-      timeout: AGENT_TIMEOUT_MS,
-      maxBuffer: AGENT_MAX_BUFFER,
-    });
-  } catch (err) {
-    execError = err;
-    if (err && typeof err.stdout === 'string' && err.stdout.trim()) {
-      output = err.stdout;
-    } else {
-      throw err;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    let promptWithContext = prompt;
+    if (!threadId) {
+      const bootstrap = await buildBootstrapContext();
+      promptWithContext = promptWithContext
+        ? `${bootstrap}\n\n${promptWithContext}`
+        : bootstrap;
     }
-  } finally {
-    const elapsedMs = Date.now() - startedAt;
-    console.info(`Agent finished chat=${chatId} durationMs=${elapsedMs}`);
-  }
-  const parsed = agent.parseOutput(output);
-  if (execError && !parsed.sawJson && !String(parsed.text || '').trim()) {
-    throw execError;
-  }
-  if (execError) {
-    console.warn(
-      `Agent exited non-zero; returning stdout chat=${chatId} code=${execError.code || 'unknown'}`
+
+    const finalPrompt = buildPrompt(
+      promptWithContext,
+      options.imagePaths || [],
+      IMAGE_DIR,
+      options.scriptContext,
+      options.documentPaths || [],
+      DOCUMENT_DIR
     );
-  }
-  if (!parsed.threadId && typeof agent.listSessionsCommand === 'function') {
+    const promptBase64 = Buffer.from(finalPrompt, 'utf8').toString('base64');
+    const promptExpression = '"$PROMPT"';
+    const agentCmd = agent.buildCommand({
+      prompt: finalPrompt,
+      promptExpression,
+      threadId,
+      thinking,
+      model: globalModels[globalAgent],
+    });
+
+    const command = [
+      `PROMPT_B64=${shellQuote(promptBase64)};`,
+      'PROMPT=$(printf %s "$PROMPT_B64" | base64 --decode);',
+      `${agentCmd}`,
+    ].join(' ');
+
+    let commandToRun = command;
+    if (agent.needsPty) {
+      commandToRun = wrapCommandWithPty(commandToRun);
+    }
+    if (agent.mergeStderr) {
+      commandToRun = `${commandToRun} 2>&1`;
+    }
+
+    const startedAt = Date.now();
+    console.info(`Agent start chat=${chatId} thread=${threadId || 'new'} attempt=${attempt + 1}`);
+    let output;
+    let execError;
+
     try {
-      const listCommand = agent.listSessionsCommand();
-      let listCommandToRun = listCommand;
-      if (agent.needsPty) {
-        listCommandToRun = wrapCommandWithPty(listCommandToRun);
-      }
-      if (agent.mergeStderr) {
-        listCommandToRun = `${listCommandToRun} 2>&1`;
-      }
-      const listOutput = await execLocal('bash', ['-lc', listCommandToRun], {
+      output = await execLocal('bash', ['-lc', commandToRun], {
         timeout: AGENT_TIMEOUT_MS,
         maxBuffer: AGENT_MAX_BUFFER,
       });
-      if (typeof agent.parseSessionList === 'function') {
-        const resolved = agent.parseSessionList(listOutput);
-        if (resolved) {
-          parsed.threadId = resolved;
-        }
-      }
     } catch (err) {
-      console.warn('Failed to resolve agent session id:', err?.message || err);
+      if (threadId && attempt === 0 && isSessionNotFoundError(err)) {
+        console.warn(`Agent session not found; resetting thread and retrying chat=${chatId}`);
+        threads.delete(threadKey);
+        persistThreads().catch((e) =>
+          console.warn('Failed to persist threads after session reset:', e)
+        );
+        threadId = undefined;
+        continue;
+      }
+      execError = err;
+      if (err && typeof err.stdout === 'string' && err.stdout.trim()) {
+        output = err.stdout;
+      } else {
+        throw err;
+      }
+    } finally {
+      const elapsedMs = Date.now() - startedAt;
+      console.info(`Agent finished chat=${chatId} durationMs=${elapsedMs}`);
     }
-  }
-  if (parsed.threadId) {
-    threads.set(threadKey, parsed.threadId);
-    persistThreads().catch((err) => console.warn('Failed to persist threads:', err));
-  }
-  if (parsed.sawJson) {
+
+    const parsed = agent.parseOutput(output);
+    if (execError && !parsed.sawJson && !String(parsed.text || '').trim()) {
+      throw execError;
+    }
+    if (execError) {
+      console.warn(
+        `Agent exited non-zero; returning stdout chat=${chatId} code=${execError.code || 'unknown'}`
+      );
+    }
+
+    if (!parsed.threadId && typeof agent.listSessionsCommand === 'function') {
+      try {
+        const listCommand = agent.listSessionsCommand();
+        let listCommandToRun = listCommand;
+        if (agent.needsPty) {
+          listCommandToRun = wrapCommandWithPty(listCommandToRun);
+        }
+        if (agent.mergeStderr) {
+          listCommandToRun = `${listCommandToRun} 2>&1`;
+        }
+        const listOutput = await execLocal('bash', ['-lc', listCommandToRun], {
+          timeout: AGENT_TIMEOUT_MS,
+          maxBuffer: AGENT_MAX_BUFFER,
+        });
+        if (typeof agent.parseSessionList === 'function') {
+          const resolved = agent.parseSessionList(listOutput);
+          if (resolved) {
+            parsed.threadId = resolved;
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to resolve agent session id:', err?.message || err);
+      }
+    }
+
+    if (parsed.threadId) {
+      threads.set(threadKey, parsed.threadId);
+      persistThreads().catch((err) => console.warn('Failed to persist threads:', err));
+    }
+    if (parsed.sawJson) {
+      return parsed.text || output;
+    }
     return parsed.text || output;
   }
-  return parsed.text || output;
+
+  return '';
 }
 
 async function replyWithResponse(ctx, response) {
@@ -950,7 +980,13 @@ bot.command('agent', async (ctx) => {
 });
 
 bot.command('reset', async (ctx) => {
-  threads.delete(getThreadKey(ctx.chat.id));
+  const chatId = String(ctx.chat.id);
+  const prefix = `${chatId}:`;
+  for (const key of Array.from(threads.keys())) {
+    if (key === chatId || key.startsWith(prefix)) {
+      threads.delete(key);
+    }
+  }
   persistThreads().catch((err) => console.warn('Failed to persist threads after reset:', err));
   ctx.reply('Session reset.');
 });
