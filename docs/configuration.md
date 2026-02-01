@@ -9,9 +9,9 @@ This bot stores a minimal JSON config with the values set by `/agent`.
 ## Schema
 ```json
 {
-  "agent": "codex",
+  "agent": "opencode",
   "models": {
-    "codex": "gpt-5"
+    "opencode": "opencode/gpt-5-nano"
   },
   "cronChatId": 123456789
 }

@@ -6,7 +6,7 @@ const agents = new Map([
   [opencode.id, opencode],
 ]);
 
-const DEFAULT_AGENT = codex.id;
+const DEFAULT_AGENT = opencode.id;
 
 function normalizeAgent(value) {
   if (!value) return DEFAULT_AGENT;

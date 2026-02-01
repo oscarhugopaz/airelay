@@ -12,6 +12,7 @@ const { Readable, Transform } = require('stream');
 const { pipeline } = require('stream/promises');
 const {
   AGENT_CODEX,
+  AGENT_OPENCODE,
   getAgent,
   getAgentLabel,
   isKnownAgent,
@@ -172,7 +173,7 @@ let threadsPersist = Promise.resolve();
 const lastScriptOutputs = new Map();
 const SCRIPT_CONTEXT_MAX_CHARS = 8000;
 let globalThinking;
-let globalAgent = AGENT_CODEX;
+let globalAgent = AGENT_OPENCODE;
 let globalModels = {};
 
 const scriptManager = new ScriptManager(SCRIPTS_DIR);

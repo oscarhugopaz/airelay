@@ -3,7 +3,7 @@
 ![CI](https://github.com/oscarhugopaz/airelay/actions/workflows/ci.yml/badge.svg?branch=main)
 
 
-Minimal Telegram bot that forwards messages to a local CLI agent (Codex by default). Each message is executed locally and the output is sent back to the chat.
+Minimal Telegram bot that forwards messages to a local CLI agent (OpenCode by default). Each message is executed locally and the output is sent back to the chat.
 
 ## What it does
 - Runs your configured CLI agent for every message
@@ -14,7 +14,7 @@ Minimal Telegram bot that forwards messages to a local CLI agent (Codex by defau
 
 ## Requirements
 - Node.js 18+
-- Agent CLI on PATH (default: `codex`, or `opencode` when configured)
+- Agent CLI on PATH (default: `opencode`, or `codex` when configured)
 - Audio (optional): `parakeet-mlx` + `ffmpeg`
 
 ## Quick start
@@ -105,7 +105,7 @@ The bot stores `/agent` in a JSON file at:
 Example:
 ```json
 {
-  "agent": "codex",
+  "agent": "opencode",
   "cronChatId": 123456789
 }
 ```
